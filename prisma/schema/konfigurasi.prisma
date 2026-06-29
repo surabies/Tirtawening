@@ -1,0 +1,9 @@
+model Konfigurasi {
+  id        String   @id @default(cuid())
+  kunci     String   @unique
+  nilai     String
+  deskripsi String?
+  tipe      String   @default("string")
+  isRahasia Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+}

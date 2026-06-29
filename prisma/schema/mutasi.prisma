@@ -1,0 +1,35 @@
+model MutasiPelanggan {
+  id              String                   @id @default(cuid())
+  pelangganId     String
+  jenis           JenisMutasi
+  periode         Int
+  nomorMeterBaru  String?
+  merkMeterBaru   String?
+  ukuranMeterBaru UkuranMeter?
+  tarifBaru       GolonganTarif?
+  koordinatMutasi Unsupported("geometry")?
+  ruteBaru        String?
+  kodeWilayahBaru String?
+  noUrut          Int?
+  jumlahPenghuni  Int?
+  tanggalAktif    DateTime?
+  statusAktif     Int?
+  prosesOlehId    String?
+  updaterKode     String?
+  catatan         String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  pelanggan       Pelanggan                @relation(fields: [pelangganId], references: [id])
+  prosesOleh      User?                    @relation("MutasiProsesOleh", fields: [prosesOlehId], references: [id])
+
+  @@unique([pelangganId, periode, jenis])
+  @@index([pelangganId])
+  @@index([jenis, periode])
+  @@index([createdAt])
+  @@index([koordinatMutasi], map: "mutasi_koordinat_gist_idx", type: Gist)
+}
+
+enum JenisMutasi {
+  PB
+  PK
+}

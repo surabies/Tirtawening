@@ -1,0 +1,69 @@
+model Pelanggan {
+  id              String                   @id @default(cuid())
+  /// nolg — nomor langganan, primary key bisnis, selalu 11 digit (zero-padded).
+  /// TIDAK PERNAH BERUBAH sepanjang masa kontrak pelanggan.
+  /// ROBUST: Gunakan @db.Char(11) agar Postgres mengunci panjang karakter tepat 11 digit di level database.
+  nomorLangganan  String                   @unique @db.Char(11)
+  /// nprs — nomor persil. Bukan @unique: 116 kasus satu lokasi fisik beda pelanggan.
+  nomorPersil     String
+  nama            String
+  alamat          String
+  /// ROBUST: Karena berupa leading zero "001", gunakan VarChar(3) untuk menghemat storage 
+  /// dan mencegah input teks yang merusak format (seperti "RT 01").
+  rt              String?                  @db.VarChar(3)
+  rw              String?                  @db.VarChar(3)
+  notelp          String?
+  jumlahPenghuni  Int?
+  /// GPS mentah dari PBPK (Biarkan sebagai legacy/backup data).
+  /// Validasi: nilai ~46168.x = Excel date serial placeholder, abaikan.
+  geoLat          Float?
+  geoLong         Float?
+  /// SPASIAL: Kolom utama PostGIS untuk menyimpan koordinat spasial (Longitude & Latitude terpadu).
+  /// Menggunakan koordinat standar bumi (SRID 4326).
+  koordinat       Unsupported("geometry")?
+  status          StatusPelanggan          @default(AKTIF)
+  isMBR           Boolean                  @default(false)
+  kodeMBR         String?
+  tarifGolonganId String?
+  seksiCaterId    String?
+  ruteId          String?
+  zonaId          String?
+  kecamatanId     String?
+  kelurahanId     String?
+  authorId        String?
+  lastEditorId    String?
+  /// Soft delete — data pelanggan tidak boleh dihapus permanen.
+  deletedAt       DateTime?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  laporanMandiri  LaporanMandiri[]
+  meter           Meter?
+  mutasi          MutasiPelanggan[]
+  author          User?                    @relation("PelangganAuthor", fields: [authorId], references: [id])
+  kecamatan       Kecamatan?               @relation(fields: [kecamatanId], references: [id])
+  kelurahan       Kelurahan?               @relation(fields: [kelurahanId], references: [id])
+  lastEditor      User?                    @relation("PelangganLastEditor", fields: [lastEditorId], references: [id])
+  rute            Rute?                    @relation(fields: [ruteId], references: [id])
+  seksiCater      SeksiCater?              @relation(fields: [seksiCaterId], references: [id])
+  tarifGolongan   TarifGolongan?           @relation(fields: [tarifGolonganId], references: [id])
+  zona            Zona?                    @relation(fields: [zonaId], references: [id])
+  pemutusan       Pemutusan[]
+  tagihan         Tagihan[]
+
+  @@index([koordinat], map: "pelanggan_koordinat_gist_idx", type: Gist)
+  @@index([nama])
+  @@index([nomorPersil])
+  @@index([status, deletedAt])
+  @@index([ruteId, deletedAt])
+  @@index([seksiCaterId, deletedAt])
+  @@index([zonaId, deletedAt])
+  @@index([tarifGolonganId, deletedAt])
+}
+
+/// Dipetakan dari mutasinama (ProgresCater) + jenis_pemutusan (r-nomor).
+enum StatusPelanggan {
+  AKTIF
+  TUTUP_SEMENTARA
+  TUTUP_SPT
+  CABUT_PERMANEN
+}

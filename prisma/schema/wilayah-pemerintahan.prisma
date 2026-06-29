@@ -1,0 +1,34 @@
+model Kecamatan {
+  id         String                   @id @default(cuid())
+  kode       String                   @unique
+  nama       String
+  /// Kolom Spasial untuk batas wilayah Kecamatan.
+  /// MultiPolygon (bukan Polygon) — diturunkan via ST_Union dari Kelurahan
+  /// anggotanya, dan hasil union antar-kelurahan yang tidak selalu nempel
+  /// bisa menghasilkan >1 bagian.
+  area       Unsupported("geometry")?
+  kelurahan  Kelurahan[]
+  pelanggan  Pelanggan[]
+  pemutusans Pemutusan[]
+
+  @@index([area], map: "kecamatan_area_gist_idx", type: Gist)
+}
+
+model Kelurahan {
+  id                String                   @id @default(cuid())
+  kode              String                   @unique
+  nama              String
+  kecamatanId       String
+  /// Kolom Spasial untuk batas wilayah Kelurahan.
+  /// MultiPolygon — di data sumber (Area_layanan_Wilayah_5.geojson), 3 dari
+  /// 32 kelurahan (PASIR KALIKI, TURANGGA, KARASAK) punya 2-4 bagian
+  /// terpisah (enclave/exclave). Kolom Polygon akan gagal/insert sebagian.
+  area              Unsupported("geometry")?
+  kecamatan         Kecamatan                @relation(fields: [kecamatanId], references: [id])
+  pelanggan         Pelanggan[]
+  pemutusans        Pemutusan[]
+  potensiPelanggans PotensiPelanggan[]
+
+  @@index([kecamatanId])
+  @@index([area], map: "kelurahan_area_gist_idx", type: Gist)
+}

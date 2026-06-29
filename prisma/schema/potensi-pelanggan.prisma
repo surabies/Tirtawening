@@ -1,0 +1,26 @@
+model PotensiPelanggan {
+  id          String                   @id @default(cuid())
+  alamat      String
+  koordinat   Unsupported("geometry")?
+  status      StatusPotensi            @default(PROSPEK)
+  catatan     String?
+  petugasId   String?
+  ruteId      String?
+  kelurahanId String?
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  kelurahan   Kelurahan?               @relation(fields: [kelurahanId], references: [id])
+  rute        Rute?                    @relation(fields: [ruteId], references: [id])
+
+  @@index([koordinat], map: "potensi_koordinat_gist_idx", type: Gist)
+  @@index([ruteId])
+  @@index([kelurahanId])
+  @@index([status])
+}
+
+enum StatusPotensi {
+  PROSPEK
+  DITOLAK
+  MENUNGGU_SURVEI
+  VALIDASI
+}

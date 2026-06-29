@@ -1,0 +1,43 @@
+model Tagihan {
+  id                  String          @id @default(cuid())
+  nomorTagihan        String          @unique @default(cuid())
+  pelangganId         String
+  pembacaanId         String?         @unique
+  periode             DateTime
+  pemakaianM3         Int
+  jmlHargaAir         Int
+  beaBeban            Int             @default(7000)
+  beaAdmin            Int             @default(10000)
+  airKotor            Int             @default(11100)
+  lainLain            Int             @default(0)
+  denda               Int             @default(0)
+  totalTagihan        Int
+  /// BigInt — max tunggakan Rp 132 juta di data lapangan
+  jumlahRekTunggak    Int?
+  nominalTunggak      BigInt?
+  status              StatusTagihan   @default(BELUM_BAYAR)
+  tanggalJatuhTempo   DateTime
+  tanggalBayar        DateTime?
+  metodePembayaran    String?
+  referensiPembayaran String?
+  validatorId         String?
+  validasiAt          DateTime?
+  catatanValidasi     String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  pelanggan           Pelanggan       @relation(fields: [pelangganId], references: [id])
+  pembacaan           PembacaanMeter? @relation(fields: [pembacaanId], references: [id])
+  validator           User?           @relation("TagihanValidator", fields: [validatorId], references: [id])
+
+  @@index([pelangganId, periode])
+  @@index([status, tanggalJatuhTempo])
+  @@index([periode])
+  @@index([nominalTunggak])
+}
+
+enum StatusTagihan {
+  BELUM_BAYAR
+  SUDAH_BAYAR
+  JATUH_TEMPO
+  DIHAPUSKAN
+}

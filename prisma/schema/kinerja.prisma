@@ -1,0 +1,17 @@
+model TargetKinerja {
+  id                  String       @id @default(cuid())
+  tahun               Int
+  bulan               Int?
+  targetKubikasi      Decimal      @default(0)
+  targetSambunganBaru Int          @default(0)
+  seksiCaterId        String?
+  wilayahDistId       String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  seksiCater          SeksiCater?  @relation(fields: [seksiCaterId], references: [id])
+  wilayahDist         WilayahDist? @relation(fields: [wilayahDistId], references: [id])
+
+  @@index([tahun, bulan])
+  @@index([seksiCaterId])
+  @@index([wilayahDistId])
+}

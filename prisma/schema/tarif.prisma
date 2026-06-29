@@ -1,0 +1,48 @@
+model TarifGolongan {
+  id        String        @id @default(cuid())
+  kode      GolonganTarif @unique
+  kodeAsli  String        @unique
+  nama      String
+  kategori  String
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  pelanggan Pelanggan[]
+  blokTarif TarifBlok[]
+}
+
+/// Tarif progresif per blok konsumsi (m³). Blok 1–4 dari data lapangan.
+/// Perubahan tarif -> insert row baru dengan berlakuMulai baru,
+/// JANGAN update baris lama (histori harus terjaga untuk audit).
+model TarifBlok {
+  id              String        @id @default(cuid())
+  tarifGolonganId String
+  blok            Int
+  batasAwalM3     Int
+  batasAkhirM3    Int?
+  hargaPerM3      Int
+  berlakuMulai    DateTime
+  berlakuSampai   DateTime?
+  createdAt       DateTime      @default(now())
+  tarifGolongan   TarifGolongan @relation(fields: [tarifGolonganId], references: [id], onDelete: Cascade)
+
+  @@unique([tarifGolonganId, blok, berlakuMulai])
+  @@index([tarifGolonganId])
+}
+
+/// Dipetakan dari field trp (ProgresCater) dan kd_goltarif (PBPK).
+enum GolonganTarif {
+  GOL_1A
+  GOL_1B
+  GOL_2A1
+  GOL_2A2
+  GOL_2A3
+  GOL_2A4
+  GOL_2A5
+  GOL_2B
+  GOL_3A
+  GOL_3B
+  GOL_3C
+  GOL_4A
+  GOL_4B
+}

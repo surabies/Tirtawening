@@ -1,0 +1,75 @@
+model Pemutusan {
+  id                  String                   @id @default(cuid())
+  /// FK ke Pelanggan dibuat OPTIONAL.
+  /// Alasan: 219 "Eks Pelanggan" dari survei geojson PW5 2026 adalah histori
+  /// cabut LAMA (1994–2025) yang nolg-nya kerap TIDAK ADA di tabel Pelanggan
+  /// (di luar jendela data CSV utama: ProgresCater/PBPK/r-nomor 2026).
+  /// FK wajib akan membuat import crash — pola sama seperti
+  /// LaporanHarianPetugas.nomorLangganan yang juga disimpan sebagai String biasa.
+  /// onDelete diturunkan dari Restrict → SetNull karena sisi opsional.
+  pelangganId         String?
+  /// FK ke Kelurahan secara langsung.
+  /// Menjamin 219 titik survei tanpa pelangganId tetap terdata rapi secara relasional.
+  kelurahanId         String?
+  /// FK ke Kecamatan secara langsung (Opsional, mempermudah rekap level atas).
+  kecamatanId         String?
+  /// nolg mentah dari sumber data (r-nomor.csv ATAU hasil parsing
+  /// "Nomor Eks Pelanggan" di survei). Tetap diisi walau pelangganId null,
+  /// supaya jejak audit & rematching manual di kemudian hari tidak hilang.
+  nomorLangganan      String?
+  jenis               JenisPemutusan
+  periode             Int
+  nomorSurat          String?
+  tanggalPermohonan   DateTime?
+  nomorSPT            String?
+  tanggalSPT          DateTime?
+  tanggalTutup        DateTime?
+  tanggalCabut        DateTime?
+  /// Asal data: "RNOMOR_CSV" (proses closing reguler & resmi, ada nomor
+  /// surat/SPT) atau "SURVEI_GEOJSON" (hasil verifikasi lapangan/mWater,
+  /// jenis pemutusan tidak diketahui pasti → jenis = LAINNYA).
+  sumberData          String                   @default("RNOMOR_CSV")
+  /// Kode unik submission survei (field "Response Code" di mWater,
+  /// terverifikasi unik di seluruh 1.875 baris dataset).
+  /// HANYA dipakai sebagai kunci idempoten saat re-import — bukan field
+  /// bisnis. @@unique([pelangganId, periode, nomorSurat]) di bawah TIDAK
+  /// cukup untuk dedup baris survei karena nomorSurat & kadang pelangganId
+  /// keduanya null (Postgres menganggap NULL selalu "berbeda").
+  kodeSurvei          String?                  @unique
+  /// Titik GPS lokasi rumah eks-pelanggan saat diverifikasi petugas di
+  /// lapangan. Diisi via raw SQL (lihat catatan Unsupported type di bawah).
+  koordinatVerifikasi Unsupported("geometry")?
+  /// Teks mentah field "Nomor Eks Pelanggan" SEBELUM diparse. Data lapangan
+  /// kerap berisi >1 nomor / catatan dalam kurung / bahkan nama enumerator
+  /// (bukan nomor sama sekali). Disimpan utuh untuk audit & rematching manual.
+  catatanSurveiAsli   String?
+  prosesOlehId        String?
+  catatan             String?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  kecamatan           Kecamatan?               @relation(fields: [kecamatanId], references: [id])
+  kelurahan           Kelurahan?               @relation(fields: [kelurahanId], references: [id])
+  pelanggan           Pelanggan?               @relation(fields: [pelangganId], references: [id])
+  prosesOleh          User?                    @relation("PemutusanProsesOleh", fields: [prosesOlehId], references: [id])
+
+  @@unique([pelangganId, periode, nomorSurat])
+  @@index([pelangganId])
+  @@index([kelurahanId])
+  @@index([kecamatanId])
+  @@index([nomorLangganan])
+  @@index([jenis, periode])
+  @@index([tanggalCabut])
+  @@index([tanggalTutup])
+  @@index([sumberData])
+  @@index([koordinatVerifikasi], map: "pemutusan_koordinat_gist_idx", type: Gist)
+}
+
+/// Sumber: survei geojson lapangan. Pelanggan terkonfirmasi sudah cabut,
+/// tapi alasan riil (TSM/SPT) tidak terekam di form survei.
+enum JenisPemutusan {
+  TSM
+  SPT
+  /// Sumber: survei geojson lapangan. Pelanggan terkonfirmasi sudah cabut,
+  /// tapi alasan riil (TSM/SPT) tidak terekam di form survei.
+  LAINNYA
+}

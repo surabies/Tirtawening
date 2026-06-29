@@ -1,0 +1,41 @@
+/// 681 nomorMeter duplikat di ProgresCater — penyebab: meter fisik diganti
+/// tapi nomor lama dipakai ulang, atau typo data entry.
+/// Solusi: isAktif flag. Hanya satu meter aktif per pelanggan,
+/// meter lama tetap ada sebagai histori (isAktif = false).
+model Meter {
+  id            String           @id @default(cuid())
+  /// nometer (ProgresCater) = kd_wm (lapdatameter) — field yang sama.
+  /// Tidak @unique karena ada 681 duplikat di data lapangan.
+  nomorMeter    String
+  nomorSegel    String?
+  /// 60+ nilai merk dengan inkonsistensi case ("ITR","lin","AQ ","aq ").
+  /// Disimpan String, dinormalisasi UPPER+TRIM di seed script.
+  merkKode      String?
+  ukuran        UkuranMeter      @default(INCH_HALF)
+  tanggalPasang DateTime?
+  umurTahun     Int?
+  umurBulan     Int?
+  /// true = meter aktif saat ini. false = sudah diganti, disimpan sebagai histori.
+  isAktif       Boolean          @default(true)
+  catatan       String?
+  pelangganId   String           @unique
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  pelanggan     Pelanggan        @relation(fields: [pelangganId], references: [id], onDelete: Cascade)
+  pembacaan     PembacaanMeter[]
+
+  @@index([nomorMeter])
+  @@index([pelangganId, isAktif])
+  @@index([merkKode])
+}
+
+/// Dipetakan dari ukmeter (ProgresCater) dan kd_ukmeter (PBPK).
+/// PBPK memakai kode "A" untuk 1/2 inci -> dimap ke INCH_HALF saat seed.
+enum UkuranMeter {
+  INCH_HALF
+  INCH_1
+  INCH_1_HALF
+  INCH_2
+  INCH_3
+  INCH_4
+}

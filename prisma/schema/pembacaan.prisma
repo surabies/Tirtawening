@@ -1,0 +1,142 @@
+model LaporanHarianPetugas {
+  id             String            @id @default(cuid())
+  /// nolg disimpan sebagai String biasa, bukan FK langsung.
+  /// Alasan: 11 pelanggan PBPK baru masuk ke lapdatameter sebelum
+  /// ada di tabel Pelanggan. FK langsung akan crash saat import.
+  nomorLangganan String
+  periode        Int
+  standAwal      Int
+  standAkhir     Int
+  pemakaian      Int
+  pemakaianLalu  Int?
+  /// Persentase penyimpangan dari bulan lalu (range: -100 s/d 4010 di data nyata).
+  /// Threshold anomali dikonfigurasi via Konfigurasi (key: AMBANG_ANOMALI_PERSEN).
+  persentase     Int?
+  kondisi        KondisiCatat      @default(NORMAL)
+  kategori       KategoriPembacaan @default(ONSITE)
+  /// kd_wm = nomor meter. Disimpan String karena bisa orphan saat import awal.
+  nomorMeter     String?
+  /// FK ke Pencatat (bukan User langsung).
+  /// kd_petugas "-" → pencatatId null (petugas tidak diketahui).
+  pencatatId     String?
+  tanggalCatat   DateTime?
+  tanggalUpload  DateTime?
+  isVerified     Boolean           @default(false)
+  verifiedAt     DateTime?
+  verifiedById   String?
+  catatanVerif   String?
+  /// Setelah verified & closing → link ke PembacaanMeter resmi.
+  pembacaanId    String?           @unique
+  createdAt      DateTime          @default(now())
+  pembacaan      PembacaanMeter?   @relation(fields: [pembacaanId], references: [id])
+  pencatat       Pencatat?         @relation(fields: [pencatatId], references: [id])
+  verifiedBy     User?             @relation("LaporanVerifikator", fields: [verifiedById], references: [id])
+
+  @@unique([nomorLangganan, periode])
+  @@index([nomorLangganan])
+  @@index([pencatatId])
+  @@index([periode])
+  @@index([isVerified])
+  @@index([tanggalCatat])
+}
+
+model PembacaanMeter {
+  id             String                @id @default(cuid())
+  meterId        String
+  /// Tanggal 1 bulan periode. thbl 202605 → 2026-05-01.
+  periode        DateTime
+  standLalu      Int
+  standAkhir     Int
+  pemakaianM3    Int
+  blokTarif      Int
+  pemakaianLalu  Int?
+  blokTarifLalu  Int?
+  kondisi        KondisiCatat          @default(NORMAL)
+  kategori       KategoriPembacaan     @default(ONSITE)
+  /// FK ke Pencatat (bukan User langsung).
+  pencatatId     String?
+  tanggalCatat   DateTime?
+  fotoBukti      String?
+  createdAt      DateTime              @default(now())
+  laporanHarian  LaporanHarianPetugas?
+  laporanMandiri LaporanMandiri?
+  meter          Meter                 @relation(fields: [meterId], references: [id], onDelete: Cascade)
+  pencatat       Pencatat?             @relation(fields: [pencatatId], references: [id])
+  tagihan        Tagihan?
+
+  @@unique([meterId, periode])
+  @@index([meterId])
+  @@index([periode])
+  @@index([kondisi])
+}
+
+model LaporanMandiri {
+  id              String               @id @default(cuid())
+  pelangganId     String
+  nomorLangganan  String
+  periode         Int
+  standDilaporkan Int
+  /// URL ke object storage (S3/R2/Supabase Storage). Wajib ada.
+  fotoUrl         String
+  fotoPublicId    String
+  /// Data pelapor — bisa berbeda dari pemilik akun
+  /// (mis. dilaporkan anggota keluarga).
+  nomorPelapor    String
+  namaPelapor     String
+  status          StatusLaporanMandiri @default(MENUNGGU)
+  verifiedById    String?
+  verifiedAt      DateTime?
+  alasanDitolak   String?
+  /// Jika diverifikasi & digunakan → link ke PembacaanMeter resmi.
+  pembacaanId     String?              @unique
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  pelanggan       Pelanggan            @relation(fields: [pelangganId], references: [id])
+  pembacaan       PembacaanMeter?      @relation(fields: [pembacaanId], references: [id])
+  verifiedBy      User?                @relation("LaporanMandiriVerifikator", fields: [verifiedById], references: [id])
+
+  @@unique([pelangganId, periode])
+  @@index([pelangganId])
+  @@index([nomorLangganan])
+  @@index([periode])
+  @@index([status])
+}
+
+/// Dipetakan dari Nm_Kel (lapdatameter) + ketcatat (ProgresCater).
+/// METER_TERBALIK dan METER_DALAM_AIR ditemukan eksklusif di lapdatameter.
+enum KondisiCatat {
+  NORMAL
+  TIDAK_DIPAKAI
+  RUMAH_KOSONG
+  STAND_TEMPEL
+  STAND_KONSUMEN
+  METER_RUSAK
+  METER_MATI_ADA_AIR
+  METER_MUNDUR
+  METER_TERBALIK
+  METER_DALAM_AIR
+  LOS_METER
+  BMK_BMB
+  TTB
+  MTA
+  TERHALANG
+  TIDAK_ADA_AIR
+  ADA_ANJING
+  DK
+  MB
+  MUDA_KEMBALI
+  REV_PENCATAT
+  DICABUT
+}
+
+enum KategoriPembacaan {
+  ONSITE
+  OFFSITE
+}
+
+enum StatusLaporanMandiri {
+  MENUNGGU
+  DIVERIFIKASI
+  DITOLAK
+  DIGUNAKAN
+}

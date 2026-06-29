@@ -1,0 +1,23 @@
+model Pencatat {
+  id             String                 @id @default(cuid())
+  /// Nama persis seperti di CSV setelah normalisasi (UPPER + TRIM).
+  /// Ini yang dipakai sebagai lookup key saat import.
+  namaLapangan   String                 @unique
+  namaLengkap    String?
+  nip            String?
+  /// Variasi penulisan lain yang merujuk ke orang yang sama.
+  /// Disimpan sebagai string JSON array: ["iwan","IWAN SURYANA","iwan s"]
+  /// Digunakan saat normalisasi data lama.
+  aliasLain      String?
+  /// Link ke akun User sistem. Nullable — pencatat lama
+  /// boleh ada tanpa akun User.
+  userId         String?                @unique
+  isAktif        Boolean                @default(true)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  laporanHarian  LaporanHarianPetugas[]
+  pembacaanMeter PembacaanMeter[]
+  user           User?                  @relation(fields: [userId], references: [id])
+
+  @@index([namaLapangan])
+}

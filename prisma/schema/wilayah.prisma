@@ -1,0 +1,91 @@
+model WilayahAdm {
+  id        String                   @id @default(cuid())
+  kode      String                   @unique
+  nama      String                   @unique
+  area      Unsupported("geometry")?
+  createdAt DateTime                 @default(now())
+  updatedAt DateTime                 @updatedAt
+  distrik   WilayahDist[]
+
+  @@index([area], map: "wilayah_adm_area_gist_idx", type: Gist)
+}
+
+model WilayahDist {
+  id             String                   @id @default(cuid())
+  kode           String                   @unique
+  nama           String
+  area           Unsupported("geometry")?
+  wilayahAdmId   String
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  seksiCater     SeksiCater[]
+  targetKinerjas TargetKinerja[]
+  wilayahAdm     WilayahAdm               @relation(fields: [wilayahAdmId], references: [id])
+  wilayahSeksi   WilayahSeksi[]
+
+  @@index([wilayahAdmId])
+  @@index([area], map: "wilayah_dist_area_gist_idx", type: Gist)
+}
+
+model SeksiCater {
+  id             String                   @id @default(cuid())
+  kode           String                   @unique
+  nama           String
+  area           Unsupported("geometry")?
+  wilayahDistId  String
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  pelanggan      Pelanggan[]
+  rute           Rute[]
+  wilayahDist    WilayahDist              @relation(fields: [wilayahDistId], references: [id])
+  targetKinerjas TargetKinerja[]
+
+  @@index([wilayahDistId])
+  @@index([area], map: "seksi_cater_area_gist_idx", type: Gist)
+}
+
+model WilayahSeksi {
+  id            String                   @id @default(cuid())
+  kode          String                   @unique
+  nama          String
+  area          Unsupported("geometry")?
+  wilayahDistId String
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  wilayahDist   WilayahDist              @relation(fields: [wilayahDistId], references: [id])
+  zona          Zona[]
+
+  @@index([wilayahDistId])
+  @@index([area], map: "wilayah_seksi_area_gist_idx", type: Gist)
+}
+
+model Zona {
+  id             String                   @id @default(cuid())
+  kode           String                   @unique
+  nama           String
+  area           Unsupported("geometry")?
+  wilayahSeksiId String
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  pelanggan      Pelanggan[]
+  wilayahSeksi   WilayahSeksi             @relation(fields: [wilayahSeksiId], references: [id])
+
+  @@index([wilayahSeksiId])
+  @@index([area], map: "zona_area_gist_idx", type: Gist)
+}
+
+model Rute {
+  id                String                   @id @default(cuid())
+  kode              String                   @unique
+  noUrut            Int?
+  area              Unsupported("geometry")?
+  seksiCaterId      String
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  pelanggan         Pelanggan[]
+  potensiPelanggans PotensiPelanggan[]
+  seksiCater        SeksiCater               @relation(fields: [seksiCaterId], references: [id])
+
+  @@index([seksiCaterId])
+  @@index([area], map: "rute_area_gist_idx", type: Gist)
+}

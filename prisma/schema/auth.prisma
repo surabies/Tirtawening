@@ -1,0 +1,114 @@
+model User {
+  id                  String                 @id @default(cuid())
+  name                String
+  email               String                 @unique
+  emailVerified       Boolean                @default(false)
+  image               String?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  twoFactorEnabled    Boolean                @default(false)
+  role                Role                   @default(USER)
+  status              UserStatus             @default(ACTIVE)
+  divisiId            String?
+  bagianId            String?
+  subBagianId         String?
+  lastLoginAt         DateTime?
+  loginCount          Int                    @default(0)
+  divisiKode          String?
+  subBagianKode       String?
+  auditLogs           AuditLog[]
+  laporanDiverifikasi LaporanHarianPetugas[] @relation("LaporanVerifikator")
+  laporanMandiriVerif LaporanMandiri[]       @relation("LaporanMandiriVerifikator")
+  mutasiDiproses      MutasiPelanggan[]      @relation("MutasiProsesOleh")
+  pelangganDibuat     Pelanggan[]            @relation("PelangganAuthor")
+  pelangganDiupdate   Pelanggan[]            @relation("PelangganLastEditor")
+  pemutusanDiproses   Pemutusan[]            @relation("PemutusanProsesOleh")
+  pencatat            Pencatat?
+  tagihanDivalidasi   Tagihan[]              @relation("TagihanValidator")
+  accounts            Account[]
+  sessions            Session[]
+  twoFactors          TwoFactor[]
+  bagian              Bagian?                @relation(fields: [bagianId], references: [id])
+  divisi              Divisi?                @relation(fields: [divisiId], references: [id])
+  subBagian           SubBagian?             @relation(fields: [subBagianId], references: [id])
+
+  @@index([email])
+  @@index([role, status])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, providerId])
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model TwoFactor {
+  id          String @id @default(cuid())
+  secret      String
+  backupCodes String
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("twoFactor")
+}
+
+enum Role {
+  SUPER_ADMIN
+  DIREKSI
+  SENIOR_MANAGER
+  MANAGER
+  SUPERVISOR
+  STAFF
+  USER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}

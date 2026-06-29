@@ -1,0 +1,56 @@
+/// 4 Divisi utama PERUMDA Tirtawening.
+/// Diisi via seed: PELAYANAN, TEHNIK, UMUM, UTAMA.
+model Divisi {
+  id        String     @id @default(cuid())
+  kode      KodeDivisi @unique
+  nama      String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  bagian    Bagian[]
+  users     User[]
+}
+
+model Bagian {
+  id          String      @id @default(cuid())
+  kode        String      @unique
+  nama        String
+  /// Kepala bagian = SENIOR_MANAGER di PELAYANAN, MANAGER di TEHNIK/UMUM.
+  levelKepala Role        @default(SENIOR_MANAGER)
+  divisiId    String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  divisi      Divisi      @relation(fields: [divisiId], references: [id])
+  subBagian   SubBagian[]
+  users       User[]
+
+  @@index([divisiId])
+}
+
+/// SubBagian di dalam Bagian.
+/// Contoh di PELAYANAN/Wilayah N: "Pencatatan Meter", "Sub Zona",
+/// "Langganan", "NRW".
+/// Contoh di TEHNIK/Produksi 1 : "Operator Pengolahan & Intake",
+/// "Mekanikal Engineering", "Bagian Perpipaan".
+/// Contoh di TEHNIK/Produksi 2 : "Operator Pengolahan & Intake",
+/// "Sumur Bor", "Mata Air".
+model SubBagian {
+  id        String   @id @default(cuid())
+  kode      String   @unique
+  nama      String
+  bagianId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  bagian    Bagian   @relation(fields: [bagianId], references: [id])
+  users     User[]
+
+  @@index([bagianId])
+}
+
+/// 4 Divisi utama PERUMDA Tirtawening Kota Bandung.
+/// UTAMA = Direktorat Utama (kantor Direksi).
+enum KodeDivisi {
+  PELAYANAN
+  TEHNIK
+  UMUM
+  UTAMA
+}

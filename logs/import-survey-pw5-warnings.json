@@ -1,0 +1,101 @@
+[
+  {
+    "responseCode": "Elang Bayu-DETY7J",
+    "status": "Eks Pelanggan",
+    "alasan": "Tidak ada nomor 11-digit valid di field 'Nomor Eks Pelanggan'",
+    "detail": null
+  },
+  {
+    "responseCode": "Elang Bayu-DFEALY",
+    "status": "Eks Pelanggan",
+    "alasan": "Tidak ada nomor 11-digit valid di field 'Nomor Eks Pelanggan'",
+    "detail": null
+  },
+  {
+    "responseCode": "Elang Bayu-DFEDP8",
+    "status": "Eks Pelanggan",
+    "alasan": "Tidak ada nomor 11-digit valid di field 'Nomor Eks Pelanggan'",
+    "detail": null
+  },
+  {
+    "responseCode": "Elang Bayu-DJ5JNG",
+    "status": "Eks Pelanggan",
+    "alasan": "Tidak ada nomor 11-digit valid di field 'Nomor Eks Pelanggan'",
+    "detail": "Elang Bayu-DJ5JNG"
+  },
+  {
+    "responseCode": "kevinaw-DJ832R",
+    "status": "Pelanggan",
+    "alasan": "Nomor Pelanggan kosong/tidak valid di data survei",
+    "detail": null
+  },
+  {
+    "responseCode": "kevinaw-DL7R7X",
+    "status": "Eks Pelanggan",
+    "alasan": "Tidak ada nomor 11-digit valid di field 'Nomor Eks Pelanggan'",
+    "detail": null
+  },
+  {
+    "responseCode": "kevinaw-DKX3XW",
+    "status": "Eks Pelanggan",
+    "alasan": "Tidak ada nomor 11-digit valid di field 'Nomor Eks Pelanggan'",
+    "detail": null
+  },
+  {
+    "responseCode": "kevinaw-DKX5K7",
+    "status": "Pelanggan",
+    "alasan": "nomorLangganan 00800710090 tidak ditemukan di tabel Pelanggan"
+  },
+  {
+    "responseCode": "kevinaw-DKX6GL",
+    "status": "Eks Pelanggan",
+    "alasan": "Tidak ada nomor 11-digit valid di field 'Nomor Eks Pelanggan'",
+    "detail": null
+  },
+  {
+    "responseCode": "Elang Bayu-DKX6UG",
+    "status": "Eks Pelanggan",
+    "alasan": "Tidak ada nomor 11-digit valid di field 'Nomor Eks Pelanggan'",
+    "detail": null
+  },
+  {
+    "responseCode": "kevinaw-DMHCEQ",
+    "status": "Pelanggan",
+    "alasan": "Nomor Pelanggan kosong/tidak valid di data survei",
+    "detail": null
+  },
+  {
+    "responseCode": "kevinaw-DMNRWA",
+    "status": "Eks Pelanggan",
+    "alasan": "Tidak ada nomor 11-digit valid di field 'Nomor Eks Pelanggan'",
+    "detail": null
+  },
+  {
+    "responseCode": "kevinaw-DN95EV",
+    "status": "Pelanggan",
+    "alasan": "nomorLangganan 00081300240 tidak ditemukan di tabel Pelanggan"
+  },
+  {
+    "responseCode": "Elang Bayu-DT9XP5",
+    "status": "Eks Pelanggan",
+    "alasan": "Tidak ada nomor 11-digit valid di field 'Nomor Eks Pelanggan'",
+    "detail": null
+  },
+  {
+    "responseCode": "Elang Bayu-DV46ZB",
+    "status": "Pelanggan",
+    "alasan": "Nomor Pelanggan kosong/tidak valid di data survei",
+    "detail": null
+  },
+  {
+    "responseCode": "Elang Bayu-DWW4WJ",
+    "status": "Pelanggan",
+    "alasan": "nomorLangganan 00080080774 tidak ditemukan di tabel Pelanggan"
+  },
+  {
+    "responseCode": "kevinaw-DX39YK",
+    "status": "Pelanggan",
+    "alasan": "Nomor Pelanggan kosong/tidak valid di data survei",
+    "detail": null
+  }
+]
