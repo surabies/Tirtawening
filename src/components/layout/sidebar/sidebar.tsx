@@ -19,7 +19,7 @@ export function Sidebar() {
 
 function SidebarContainer({ children }: { children: React.ReactNode }) {
   const [active, setActive] = useState(false)
-  const [isLoggingOut, setIsLoggingOut] = useState(false) // 🔄 State untuk loading saat logout
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const location = useLocation()
   const router = useRouter()
 
@@ -36,7 +36,7 @@ function SidebarContainer({ children }: { children: React.ReactNode }) {
           onSuccess: async () => {
             toast.success('Berhasil keluar!')
             // Membersihkan state aplikasi dan redirect penuh ke login
-            window.location.href = '/auth/sign-in'
+            window.location.href = '/login'
           },
           onError: () => {
             toast.error('Gagal keluar. Silakan coba lagi.')

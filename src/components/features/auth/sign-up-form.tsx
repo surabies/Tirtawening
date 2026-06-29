@@ -1,4 +1,6 @@
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+// src/components/features/auth/sign-up-form.tsx
+
+import { Link, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from '@tanstack/react-form'
@@ -8,11 +10,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { authClient } from '@/lib/auth-client'
-import { AuthLeftPanel } from './_components/-auth-left-panel'
+import { cn } from '@/lib/utils'
+import { InteractiveGridPattern } from './interactive-grid'
+import logo from '@/assets/images/logo.png'
 
-export const Route = createFileRoute('/auth/sign-up')({
-  component: SignUpPage,
-})
+// ── Schema ────────────────────────────────────────────────────────────────────
 
 const signUpSchema = z.object({
   name: z.string().min(2, 'Nama minimal 2 karakter'),
@@ -21,7 +23,9 @@ const signUpSchema = z.object({
   confirmPassword: z.string().min(1, 'Konfirmasi password wajib diisi'),
 })
 
-function SignUpPage() {
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function SignUpForm() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -66,11 +70,56 @@ function SignUpPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-      <AuthLeftPanel quote="Bergabunglah dan kelola data pelanggan PDAM dengan lebih mudah." />
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
+      {/* ── Kolom kiri — dekorasi ── */}
+      <div className="relative hidden h-full flex-col p-10 lg:flex border-r border-border/40">
+        <div className="absolute inset-0 bg-sidebar" />
 
+        <InteractiveGridPattern
+          className={cn('absolute inset-x-0 inset-y-[0%] h-full skew-y-12')}
+          style={{
+            maskImage:
+              'radial-gradient(400px circle at center, white, transparent)',
+            WebkitMaskImage:
+              'radial-gradient(400px circle at center, white, transparent)',
+          }}
+        />
+
+        {/* Logo */}
+        <div className="relative z-20 flex items-center">
+          <Link
+            to="/"
+            className="flex items-center gap-3 font-semibold tracking-tight text-sidebar-foreground"
+          >
+            <img
+              src={logo}
+              alt="Logo Tirtacater"
+              width={46}
+              height={46}
+              className="h-11 w-11 rounded-full border border-border/60 bg-card p-1.5 shadow-sm"
+            />
+            <span className="text-xl font-bold">Tirtawening</span>
+          </Link>
+        </div>
+
+        {/* Quote */}
+        <div className="relative z-20 mt-auto text-sidebar-foreground">
+          <blockquote className="space-y-2 border-l-2 border-sidebar-foreground/20 pl-4">
+            <p className="text-lg font-medium">
+              &ldquo;Bergabunglah dan kelola data PDAM dengan lebih mudah,
+              efisien, dan transparan.&rdquo;
+            </p>
+            <footer className="text-sm text-sidebar-foreground/70">
+              — Tim Tirtawening
+            </footer>
+          </blockquote>
+        </div>
+      </div>
+
+      {/* ── Kolom kanan — form ── */}
       <div className="flex h-full items-center justify-center p-4 lg:p-8">
         <div className="w-full max-w-md space-y-6">
+          {/* Header */}
           <div className="space-y-1.5 text-center">
             <h1 className="text-2xl font-semibold tracking-tight">Buat Akun</h1>
             <p className="text-sm text-muted-foreground">
@@ -78,6 +127,7 @@ function SignUpPage() {
             </p>
           </div>
 
+          {/* Form */}
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -162,6 +212,11 @@ function SignUpPage() {
                       onClick={() => setShowPassword((v) => !v)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       tabIndex={-1}
+                      aria-label={
+                        showPassword
+                          ? 'Sembunyikan password'
+                          : 'Tampilkan password'
+                      }
                     >
                       {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
@@ -178,7 +233,15 @@ function SignUpPage() {
 
             <form.Field
               name="confirmPassword"
-              validators={{ onChange: signUpSchema.shape.confirmPassword }}
+              validators={{
+                onChangeListenTo: ['password'],
+                onChange: ({ value, fieldApi }) => {
+                  if (!value) return 'Konfirmasi password wajib diisi'
+                  if (value !== fieldApi.form.getFieldValue('password'))
+                    return 'Password tidak cocok'
+                  return undefined
+                },
+              }}
             >
               {(field) => (
                 <div className="space-y-1.5">
@@ -209,6 +272,7 @@ function SignUpPage() {
             </Button>
           </form>
 
+          {/* Divider OAuth */}
           <div className="flex items-center gap-3">
             <div className="h-px flex-1 bg-border" />
             <span className="text-xs text-muted-foreground">
@@ -217,6 +281,7 @@ function SignUpPage() {
             <div className="h-px flex-1 bg-border" />
           </div>
 
+          {/* OAuth */}
           <div className="flex flex-col gap-2">
             <Button
               variant="outline"
@@ -240,10 +305,11 @@ function SignUpPage() {
             </Button>
           </div>
 
+          {/* Footer */}
           <p className="text-center text-xs text-muted-foreground">
             Sudah punya akun?{' '}
             <Link
-              to="/auth/sign-in"
+              to="/login"
               className="font-medium text-foreground underline-offset-4 hover:underline"
             >
               Masuk di sini
@@ -254,6 +320,8 @@ function SignUpPage() {
     </div>
   )
 }
+
+// ── Icon helpers ──────────────────────────────────────────────────────────────
 
 function GithubIcon() {
   return (

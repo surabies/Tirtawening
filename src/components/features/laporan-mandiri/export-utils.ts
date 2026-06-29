@@ -193,6 +193,14 @@ export async function exportToPDF(
   options?: {
     periode?: number
     instansi?: string
+    /**
+     * Ukuran kertas. Lebar tiap kolom dihitung PROPORSIONAL dari lebar
+     * halaman yang sebenarnya (bukan mm tetap), jadi tabel selalu pas
+     * mengisi halaman & No. Telp nggak ke-wrap di ukuran kertas apa pun.
+     */
+    paperSize?: 'a4' | 'a3' | 'letter' | 'legal' | 'tabloid'
+    /** Default landscape — kolomnya banyak, paling pas di orientasi lebar */
+    orientation?: 'landscape' | 'portrait'
   },
 ): Promise<void> {
   // Dynamic import
@@ -203,20 +211,27 @@ export async function exportToPDF(
     ? formatPeriode(options.periode)
     : 'Semua Periode'
   const instansi = options?.instansi ?? 'PERUMDA Tirtawening Kota Bandung'
+  const paperSize = options?.paperSize ?? 'a4'
+  const orientation = options?.orientation ?? 'landscape'
 
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+  const doc = new jsPDF({ orientation, unit: 'mm', format: paperSize })
+
+  // ── Margin & lebar halaman aktual — basis hitung lebar kolom ──
+  const MARGIN = 14
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const usableWidth = pageWidth - MARGIN * 2
 
   // ── Header teks ──
   doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
-  doc.text(instansi, 14, 14)
+  doc.text(instansi, MARGIN, 14)
 
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
-  doc.text(`Laporan Mandiri Meter — ${periodeLabel}`, 14, 20)
+  doc.text(`Laporan Mandiri Meter — ${periodeLabel}`, MARGIN, 20)
   doc.text(
     `Diekspor: ${new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}  |  Jumlah data: ${rows.length} laporan`,
-    14,
+    MARGIN,
     26,
   )
 
@@ -249,8 +264,31 @@ export async function exportToPDF(
     diproses: formatDate(r.verifiedAt),
   }))
 
+  // ── Lebar kolom sebagai BOBOT (proporsi), bukan mm tetap ──
+  // Dinormalisasi ke `usableWidth` di bawah, jadi otomatis menyesuaikan
+  // lebar halaman apa pun. Bobot "noTelp" sengaja dilebihkan supaya
+  // 12 digit nomor HP (mis. 081220667809) selalu muat 1 baris, center,
+  // nggak ke-wrap ke baris ke-2 seperti sebelumnya.
+  const COLUMN_WEIGHTS: Record<string, number> = {
+    no: 8,
+    noLangganan: 26,
+    namaPelanggan: 34,
+    namaPelapor: 26,
+    noTelp: 30,
+    periode: 16,
+    stand: 18,
+    pakai: 18,
+    status: 20,
+    dikirim: 20,
+    diproses: 20,
+  }
+  const totalWeight = Object.values(COLUMN_WEIGHTS).reduce((a, b) => a + b, 0)
+  const widthOf = (key: string) =>
+    (COLUMN_WEIGHTS[key] / totalWeight) * usableWidth
+
   autoTable(doc, {
     startY: 32,
+    margin: { left: MARGIN, right: MARGIN },
     columns,
     body,
     styles: {
@@ -265,17 +303,26 @@ export async function exportToPDF(
       halign: 'center',
     },
     columnStyles: {
-      no: { halign: 'center', cellWidth: 8 },
-      noLangganan: { halign: 'center', font: 'courier', cellWidth: 30 },
-      namaPelanggan: { cellWidth: 36 },
-      namaPelapor: { cellWidth: 36 },
-      noTelp: { halign: 'center', font: 'courier', cellWidth: 30 },
-      periode: { halign: 'center', cellWidth: 20 },
-      stand: { halign: 'right', cellWidth: 22 },
-      pakai: { halign: 'right', cellWidth: 22 },
-      status: { halign: 'center', cellWidth: 22 },
-      dikirim: { halign: 'center', cellWidth: 22 },
-      diproses: { halign: 'center', cellWidth: 22 },
+      no: { halign: 'center', cellWidth: widthOf('no') },
+      noLangganan: {
+        halign: 'center',
+        font: 'courier',
+        cellWidth: widthOf('noLangganan'),
+      },
+      namaPelanggan: { cellWidth: widthOf('namaPelanggan') },
+      namaPelapor: { cellWidth: widthOf('namaPelapor') },
+      noTelp: {
+        halign: 'center',
+        font: 'courier',
+        fontSize: 7, // sedikit lebih kecil — extra aman dari wrap di kertas sempit
+        cellWidth: widthOf('noTelp'),
+      },
+      periode: { halign: 'center', cellWidth: widthOf('periode') },
+      stand: { halign: 'right', cellWidth: widthOf('stand') },
+      pakai: { halign: 'right', cellWidth: widthOf('pakai') },
+      status: { halign: 'center', cellWidth: widthOf('status') },
+      dikirim: { halign: 'center', cellWidth: widthOf('dikirim') },
+      diproses: { halign: 'center', cellWidth: widthOf('diproses') },
     },
     alternateRowStyles: { fillColor: [248, 250, 252] }, // slate-50
     // Footer total
@@ -283,7 +330,7 @@ export async function exportToPDF(
       [
         {
           content: `Total: ${rows.length} laporan`,
-          colSpan: 11,
+          colSpan: columns.length,
           styles: { halign: 'right', fontStyle: 'bold', fontSize: 8 },
         },
       ],

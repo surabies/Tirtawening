@@ -34,7 +34,7 @@ const ReactQueryDevtools = import.meta.env.PROD
 interface MyRouterContext {
   queryClient: QueryClient
   trpc: TRPCOptionsProxy<AppRouter>
-  session: {
+  session?: {
     session: Session
     user: AuthUser
   } | null

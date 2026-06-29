@@ -1,4 +1,6 @@
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+// src/components/features/auth/login-form.tsx
+
+import { Link, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from '@tanstack/react-form'
@@ -8,21 +10,31 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { authClient } from '@/lib/auth-client'
-import { AuthLeftPanel } from './_components/-auth-left-panel'
+import { cn } from '@/lib/utils'
+import { InteractiveGridPattern } from './interactive-grid'
+import logo from '@/assets/images/logo.png'
 
-export const Route = createFileRoute('/auth/sign-in')({
-  component: SignInPage,
-})
+// ── Schema ────────────────────────────────────────────────────────────────────
 
 const signInSchema = z.object({
   email: z.string().email('Masukkan alamat email yang valid'),
   password: z.string().min(1, 'Password tidak boleh kosong'),
 })
 
-function SignInPage() {
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface LoginFormProps {
+  redirectTo?: string
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function LoginForm({ redirectTo }: LoginFormProps) {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+
+  const destination = redirectTo ?? '/overview'
 
   const form = useForm({
     defaultValues: { email: '', password: '' },
@@ -32,11 +44,15 @@ function SignInPage() {
         const { error } = await authClient.signIn.email({
           email: value.email,
           password: value.password,
-          callbackURL: '/overview',
+          callbackURL: destination,
         })
 
         if (error) {
           const code = (error as { code?: string }).code
+          if (code === 'TWO_FACTOR_REQUIRED') {
+            await router.navigate({ to: '/two-factor' })
+            return
+          }
           toast.error(
             code === 'INVALID_EMAIL_OR_PASSWORD'
               ? 'Email atau password salah.'
@@ -45,7 +61,7 @@ function SignInPage() {
           return
         }
 
-        await router.navigate({ to: '/overview' })
+        await router.navigate({ to: destination })
       } finally {
         setIsLoading(false)
       }
@@ -53,15 +69,60 @@ function SignInPage() {
   })
 
   const handleOAuth = async (provider: 'github' | 'google') => {
-    await authClient.signIn.social({ provider, callbackURL: '/overview' })
+    await authClient.signIn.social({ provider, callbackURL: destination })
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-      <AuthLeftPanel />
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
+      {/* ── Kolom kiri — dekorasi ── */}
+      <div className="relative hidden h-full flex-col p-10 lg:flex border-r border-border/40">
+        <div className="absolute inset-0 bg-sidebar" />
 
+        <InteractiveGridPattern
+          className={cn('absolute inset-x-0 inset-y-[0%] h-full skew-y-12')}
+          style={{
+            maskImage:
+              'radial-gradient(400px circle at center, white, transparent)',
+            WebkitMaskImage:
+              'radial-gradient(400px circle at center, white, transparent)',
+          }}
+        />
+
+        {/* Logo */}
+        <div className="relative z-20 flex items-center">
+          <Link
+            to="/"
+            className="flex items-center gap-3 font-semibold tracking-tight text-sidebar-foreground"
+          >
+            <img
+              src={logo}
+              alt="Logo Tirtacater"
+              width={46}
+              height={46}
+              className="h-11 w-11 rounded-full border border-border/60 bg-card p-1.5 shadow-sm"
+            />
+            <span className="text-xl font-bold">Tirtawening</span>
+          </Link>
+        </div>
+
+        {/* Quote */}
+        <div className="relative z-20 mt-auto text-sidebar-foreground">
+          <blockquote className="space-y-2 border-l-2 border-sidebar-foreground/20 pl-4">
+            <p className="text-lg font-medium">
+              &ldquo;Sistem ini membantu kami mengelola data pelanggan PDAM
+              dengan lebih efisien dan terstruktur.&rdquo;
+            </p>
+            <footer className="text-sm text-sidebar-foreground/70">
+              — Tim Tirtawening
+            </footer>
+          </blockquote>
+        </div>
+      </div>
+
+      {/* ── Kolom kanan — form ── */}
       <div className="flex h-full items-center justify-center p-4 lg:p-8">
         <div className="w-full max-w-md space-y-6">
+          {/* Header */}
           <div className="space-y-1.5 text-center">
             <h1 className="text-2xl font-semibold tracking-tight">Masuk</h1>
             <p className="text-sm text-muted-foreground">
@@ -69,6 +130,7 @@ function SignInPage() {
             </p>
           </div>
 
+          {/* Form */}
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -112,7 +174,7 @@ function SignInPage() {
                   <div className="flex items-center justify-between">
                     <Label htmlFor={field.name}>Password</Label>
                     <Link
-                      to="/auth/forgot-password"
+                      to="/forgot-password"
                       className="text-xs text-muted-foreground underline-offset-4 hover:underline"
                     >
                       Lupa password?
@@ -135,6 +197,11 @@ function SignInPage() {
                       onClick={() => setShowPassword((v) => !v)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       tabIndex={-1}
+                      aria-label={
+                        showPassword
+                          ? 'Sembunyikan password'
+                          : 'Tampilkan password'
+                      }
                     >
                       {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
@@ -155,6 +222,7 @@ function SignInPage() {
             </Button>
           </form>
 
+          {/* Divider OAuth */}
           <div className="flex items-center gap-3">
             <div className="h-px flex-1 bg-border" />
             <span className="text-xs text-muted-foreground">
@@ -163,6 +231,7 @@ function SignInPage() {
             <div className="h-px flex-1 bg-border" />
           </div>
 
+          {/* OAuth */}
           <div className="flex flex-col gap-2">
             <Button
               variant="outline"
@@ -186,10 +255,11 @@ function SignInPage() {
             </Button>
           </div>
 
+          {/* Footer */}
           <p className="text-center text-xs text-muted-foreground">
             Belum punya akun?{' '}
             <Link
-              to="/auth/sign-up"
+              to="/sign-up"
               className="font-medium text-foreground underline-offset-4 hover:underline"
             >
               Daftar sekarang
@@ -200,6 +270,8 @@ function SignInPage() {
     </div>
   )
 }
+
+// ── Icon helpers ──────────────────────────────────────────────────────────────
 
 function GithubIcon() {
   return (

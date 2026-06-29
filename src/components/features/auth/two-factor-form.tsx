@@ -1,31 +1,26 @@
-// src/routes/auth/two-factor.tsx
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
 import { useState, useRef, useEffect } from 'react'
 import { Loader2, ShieldCheck, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { authClient } from '@/lib/auth-client'
-import { AuthLeftPanel } from './_components/-auth-left-panel'
 
-export const Route = createFileRoute('/auth/two-factor')({
-  component: TwoFactorPage,
-})
-
-function TwoFactorPage() {
+export function TwoFactorForm() {
   const router = useRouter()
-  const [code, setCode] = useState('')
+  const [otpCode, setOtpCode] = useState('')
+  const [backupCode, setBackupCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isTrustedDevice, setIsTrustedDevice] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const otpInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    inputRef.current?.focus()
+    otpInputRef.current?.focus()
   }, [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (code.length !== 6) {
+    if (otpCode.length !== 6) {
       toast.error('Masukkan 6 digit kode verifikasi.')
       return
     }
@@ -33,7 +28,7 @@ function TwoFactorPage() {
     setIsLoading(true)
     try {
       const { error } = await authClient.twoFactor.verifyTotp({
-        code,
+        code: otpCode,
         trustDevice: isTrustedDevice,
       })
 
@@ -43,8 +38,8 @@ function TwoFactorPage() {
             ? 'Kode salah atau sudah kadaluarsa. Coba lagi.'
             : (error.message ?? 'Verifikasi gagal.'),
         )
-        setCode('')
-        inputRef.current?.focus()
+        setOtpCode('')
+        otpInputRef.current?.focus()
         return
       }
 
@@ -54,17 +49,20 @@ function TwoFactorPage() {
     }
   }
 
-  const handleBackupCode = async () => {
-    if (code.length < 8) {
-      toast.error('Masukkan kode backup (8 karakter).')
+  const handleBackupCodeSubmit = async () => {
+    if (backupCode.length < 8) {
+      toast.error('Kode backup minimal 8 karakter.')
       return
     }
 
     setIsLoading(true)
     try {
-      const { error } = await authClient.twoFactor.verifyBackupCode({ code })
+      const { error } = await authClient.twoFactor.verifyBackupCode({
+        code: backupCode,
+      })
       if (error) {
         toast.error('Kode backup tidak valid.')
+        setBackupCode('')
         return
       }
       toast.success('Verifikasi berhasil!')
@@ -76,8 +74,6 @@ function TwoFactorPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-      <AuthLeftPanel />
-
       <div className="flex h-full items-center justify-center p-4 lg:p-8">
         <div className="w-full max-w-md space-y-6">
           {/* Icon + Header */}
@@ -95,18 +91,18 @@ function TwoFactorPage() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Input kode OTP — satu input, style besar */}
+          {/* OTP Form */}
+          <form onSubmit={handleOtpSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Input
-                ref={inputRef}
+                ref={otpInputRef}
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
                 maxLength={6}
                 placeholder="000000"
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                 disabled={isLoading}
                 className="text-center font-mono text-2xl tracking-[0.5em] h-14"
                 autoComplete="one-time-code"
@@ -127,14 +123,14 @@ function TwoFactorPage() {
             <Button
               type="submit"
               className="w-full"
-              disabled={isLoading || code.length !== 6}
+              disabled={isLoading || otpCode.length !== 6}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isLoading ? 'Memverifikasi...' : 'Verifikasi'}
             </Button>
           </form>
 
-          {/* Backup code option */}
+          {/* Backup code — state TERPISAH dari otpCode */}
           <div className="rounded-lg border border-dashed border-border p-4 space-y-3">
             <p className="text-xs font-medium text-muted-foreground">
               Tidak bisa mengakses aplikasi authenticator?
@@ -143,8 +139,8 @@ function TwoFactorPage() {
               <Input
                 type="text"
                 placeholder="Masukkan kode backup"
-                value={code.length > 6 ? code : ''}
-                onChange={(e) => setCode(e.target.value)}
+                value={backupCode}
+                onChange={(e) => setBackupCode(e.target.value)}
                 disabled={isLoading}
                 className="font-mono text-sm"
                 maxLength={8}
@@ -152,8 +148,8 @@ function TwoFactorPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleBackupCode}
-                disabled={isLoading}
+                onClick={handleBackupCodeSubmit}
+                disabled={isLoading || backupCode.length < 8}
                 className="shrink-0"
               >
                 Gunakan
@@ -163,7 +159,7 @@ function TwoFactorPage() {
 
           <div className="text-center">
             <Link
-              to="/auth/sign-in"
+              to="/login"
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 hover:underline"
             >
               <ArrowLeft size={14} />

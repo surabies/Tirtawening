@@ -1,9 +1,9 @@
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -102,9 +102,12 @@ function InfoRow({
   )
 }
 
+// Tidak ada mt-4 bawaan lagi — jarak antar section sekarang diatur oleh
+// `gap-5` pada flex container pembungkus (lihat di bawah), bukan margin
+// di label-nya sendiri. Lebih konsisten di layout 2 kolom.
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-muted-foreground mb-1 mt-4 text-[10px] font-semibold uppercase tracking-widest">
+    <p className="text-muted-foreground mb-1 text-[10px] font-semibold uppercase tracking-widest">
       {children}
     </p>
   )
@@ -122,6 +125,9 @@ type Props = {
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
+// Catatan: nama export tetap `DetailSheet` supaya pemanggilnya di
+// laporan-mandiri-table.tsx tidak perlu diubah — tapi sekarang isinya
+// Dialog (modal di tengah), bukan Sheet (panel geser dari samping).
 
 export function DetailSheet({
   row,
@@ -137,17 +143,14 @@ export function DetailSheet({
   const bisaAksi = row.status === 'MENUNGGU'
 
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent
-        className="flex w-full flex-col gap-0 overflow-y-auto sm:max-w-md"
-        side="right"
-      >
-        {/* ── Header ── */}
-        <SheetHeader className="border-b pb-4">
-          <div className="flex items-center justify-between gap-3">
-            <SheetTitle className="text-base font-semibold leading-tight">
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="flex max-h-[88vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+        {/* ── Header (sticky) ── */}
+        <DialogHeader className="shrink-0 space-y-1.5 border-b px-6 py-4 text-left">
+          <div className="flex items-center justify-between gap-3 pr-8">
+            <DialogTitle className="text-base font-semibold leading-tight">
               Detail Laporan Mandiri
-            </SheetTitle>
+            </DialogTitle>
             <Badge variant="outline" className={status.className}>
               {status.label}
             </Badge>
@@ -155,185 +158,201 @@ export function DetailSheet({
           <p className="text-muted-foreground font-mono text-sm">
             {row.nomorLangganan}
           </p>
-        </SheetHeader>
+        </DialogHeader>
 
-        <div className="flex-1 space-y-1 px-1 py-4">
-          {/* ── Pelanggan ── */}
-          <SectionLabel>Data Pelanggan</SectionLabel>
-          <div className="bg-muted/30 rounded-lg px-3">
-            <InfoRow
-              icon={<Hash className="h-4 w-4" />}
-              label="No. Langganan"
-              value={<span className="font-mono">{row.nomorLangganan}</span>}
-            />
-            <Separator className="my-0" />
-            <InfoRow
-              icon={<User className="h-4 w-4" />}
-              label="Nama Pelanggan"
-              value={row.pelanggan.nama}
-            />
-            <Separator className="my-0" />
-            <InfoRow
-              icon={<MapPin className="h-4 w-4" />}
-              label="Alamat"
-              value={
-                <span className="leading-relaxed">{row.pelanggan.alamat}</span>
-              }
-            />
-            {row.pelanggan.seksiCater && (
-              <>
+        {/* ── Body — scroll, 2 kolom di layar md+ ── */}
+        <div className="grid flex-1 gap-x-6 gap-y-5 overflow-y-auto px-6 py-5 md:grid-cols-[1.05fr_1fr]">
+          {/* KIRI — Foto & Pelapor */}
+          <div className="flex flex-col gap-5">
+            <div>
+              <SectionLabel>Foto Meter</SectionLabel>
+              <div className="overflow-hidden rounded-lg border">
+                {row.fotoUrl ? (
+                  <div className="group relative">
+                    <img
+                      src={row.fotoUrl}
+                      alt="Foto meter pelanggan"
+                      className="h-60 w-full object-cover md:h-72"
+                      onError={(e) => {
+                        ;(e.target as HTMLImageElement).style.display = 'none'
+                      }}
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => window.open(row.fotoUrl, '_blank')}
+                        className="gap-1.5"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Buka di tab baru
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground flex h-48 items-center justify-center gap-2 text-sm">
+                    <AlertCircle className="h-4 w-4" />
+                    Foto tidak tersedia
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <SectionLabel>Identitas Pelapor</SectionLabel>
+              <div className="bg-muted/30 rounded-lg px-3">
+                <InfoRow
+                  icon={<User className="h-4 w-4" />}
+                  label="Nama Pelapor"
+                  value={row.namaPelapor}
+                />
                 <Separator className="my-0" />
                 <InfoRow
-                  icon={<Hash className="h-4 w-4" />}
-                  label="Seksi Cater"
-                  value={`${row.pelanggan.seksiCater.kode} — ${row.pelanggan.seksiCater.nama}`}
+                  icon={<Phone className="h-4 w-4" />}
+                  label="Nomor Pelapor"
+                  value={<span className="font-mono">{row.nomorPelapor}</span>}
                 />
-              </>
-            )}
+              </div>
+            </div>
           </div>
 
-          {/* ── Laporan ── */}
-          <SectionLabel>Data Laporan</SectionLabel>
-          <div className="bg-muted/30 rounded-lg px-3">
-            <InfoRow
-              icon={<Calendar className="h-4 w-4" />}
-              label="Periode"
-              value={formatPeriode(row.periode)}
-            />
-            <Separator className="my-0" />
-            <InfoRow
-              icon={<Gauge className="h-4 w-4" />}
-              label="Stand Meter Dilaporkan"
-              value={
-                <span className="tabular-nums">
-                  {row.standDilaporkan.toLocaleString('id-ID')}{' '}
-                  <span className="text-muted-foreground font-normal">m³</span>
-                </span>
-              }
-            />
-            {row.pembacaan && (
-              <>
+          {/* KANAN — Pelanggan, Laporan, Riwayat */}
+          <div className="flex flex-col gap-5">
+            <div>
+              <SectionLabel>Data Pelanggan</SectionLabel>
+              <div className="bg-muted/30 rounded-lg px-3">
+                <InfoRow
+                  icon={<Hash className="h-4 w-4" />}
+                  label="No. Langganan"
+                  value={
+                    <span className="font-mono">{row.nomorLangganan}</span>
+                  }
+                />
                 <Separator className="my-0" />
                 <InfoRow
-                  icon={<Gauge className="h-4 w-4" />}
-                  label="Pemakaian (setelah verifikasi)"
+                  icon={<User className="h-4 w-4" />}
+                  label="Nama Pelanggan"
+                  value={row.pelanggan.nama}
+                />
+                <Separator className="my-0" />
+                <InfoRow
+                  icon={<MapPin className="h-4 w-4" />}
+                  label="Alamat"
                   value={
-                    <span className="tabular-nums text-emerald-600 dark:text-emerald-400">
-                      {row.pembacaan.pemakaianM3} m³
+                    <span className="leading-relaxed">
+                      {row.pelanggan.alamat}
                     </span>
                   }
                 />
-              </>
-            )}
-            <Separator className="my-0" />
-            <InfoRow
-              icon={<Clock className="h-4 w-4" />}
-              label="Dikirim pada"
-              value={
-                <span className="tabular-nums">
-                  {formatDate(row.createdAt)}
-                </span>
-              }
-            />
-          </div>
-
-          {/* ── Pelapor ── */}
-          <SectionLabel>Identitas Pelapor</SectionLabel>
-          <div className="bg-muted/30 rounded-lg px-3">
-            <InfoRow
-              icon={<User className="h-4 w-4" />}
-              label="Nama Pelapor"
-              value={row.namaPelapor}
-            />
-            <Separator className="my-0" />
-            <InfoRow
-              icon={<Phone className="h-4 w-4" />}
-              label="Nomor Pelapor"
-              value={<span className="font-mono">{row.nomorPelapor}</span>}
-            />
-          </div>
-
-          {/* ── Foto Meter ── */}
-          <SectionLabel>Foto Meter</SectionLabel>
-          <div className="overflow-hidden rounded-lg border">
-            {row.fotoUrl ? (
-              <div className="group relative">
-                <img
-                  src={row.fotoUrl}
-                  alt="Foto meter pelanggan"
-                  className="h-56 w-full object-cover"
-                  onError={(e) => {
-                    ;(e.target as HTMLImageElement).style.display = 'none'
-                  }}
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => window.open(row.fotoUrl, '_blank')}
-                    className="gap-1.5"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Buka di tab baru
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-muted-foreground flex h-32 items-center justify-center gap-2 text-sm">
-                <AlertCircle className="h-4 w-4" />
-                Foto tidak tersedia
-              </div>
-            )}
-          </div>
-
-          {/* ── Status Verifikasi ── */}
-          {(row.verifiedAt || row.alasanDitolak) && (
-            <>
-              <SectionLabel>Riwayat Verifikasi</SectionLabel>
-              <div className="bg-muted/30 rounded-lg px-3">
-                {row.verifiedAt && (
-                  <InfoRow
-                    icon={<Clock className="h-4 w-4" />}
-                    label="Diproses pada"
-                    value={
-                      <span className="tabular-nums">
-                        {formatDate(row.verifiedAt)}
-                      </span>
-                    }
-                  />
-                )}
-                {row.verifiedBy?.name && (
+                {row.pelanggan.seksiCater && (
                   <>
                     <Separator className="my-0" />
                     <InfoRow
-                      icon={<User className="h-4 w-4" />}
-                      label="Diproses oleh"
-                      value={row.verifiedBy.name}
+                      icon={<Hash className="h-4 w-4" />}
+                      label="Seksi Cater"
+                      value={`${row.pelanggan.seksiCater.kode} — ${row.pelanggan.seksiCater.nama}`}
                     />
                   </>
                 )}
-                {row.alasanDitolak && (
+              </div>
+            </div>
+
+            <div>
+              <SectionLabel>Data Laporan</SectionLabel>
+              <div className="bg-muted/30 rounded-lg px-3">
+                <InfoRow
+                  icon={<Calendar className="h-4 w-4" />}
+                  label="Periode"
+                  value={formatPeriode(row.periode)}
+                />
+                <Separator className="my-0" />
+                <InfoRow
+                  icon={<Gauge className="h-4 w-4" />}
+                  label="Stand Meter Dilaporkan"
+                  value={
+                    <span className="tabular-nums">
+                      {row.standDilaporkan.toLocaleString('id-ID')}{' '}
+                      <span className="text-muted-foreground font-normal">
+                        m³
+                      </span>
+                    </span>
+                  }
+                />
+                {row.pembacaan && (
                   <>
                     <Separator className="my-0" />
                     <InfoRow
-                      icon={<AlertCircle className="h-4 w-4 text-red-500" />}
-                      label="Alasan Penolakan"
+                      icon={<Gauge className="h-4 w-4" />}
+                      label="Pemakaian (setelah verifikasi)"
                       value={
-                        <span className="leading-relaxed text-red-600 dark:text-red-400">
-                          {row.alasanDitolak}
+                        <span className="tabular-nums text-emerald-600 dark:text-emerald-400">
+                          {row.pembacaan.pemakaianM3} m³
                         </span>
                       }
                     />
                   </>
                 )}
+                <Separator className="my-0" />
+                <InfoRow
+                  icon={<Clock className="h-4 w-4" />}
+                  label="Dikirim pada"
+                  value={
+                    <span className="tabular-nums">
+                      {formatDate(row.createdAt)}
+                    </span>
+                  }
+                />
               </div>
-            </>
-          )}
+            </div>
+
+            {(row.verifiedAt || row.alasanDitolak) && (
+              <div>
+                <SectionLabel>Riwayat Verifikasi</SectionLabel>
+                <div className="bg-muted/30 rounded-lg px-3">
+                  {row.verifiedAt && (
+                    <InfoRow
+                      icon={<Clock className="h-4 w-4" />}
+                      label="Diproses pada"
+                      value={
+                        <span className="tabular-nums">
+                          {formatDate(row.verifiedAt)}
+                        </span>
+                      }
+                    />
+                  )}
+                  {row.verifiedBy?.name && (
+                    <>
+                      <Separator className="my-0" />
+                      <InfoRow
+                        icon={<User className="h-4 w-4" />}
+                        label="Diproses oleh"
+                        value={row.verifiedBy.name}
+                      />
+                    </>
+                  )}
+                  {row.alasanDitolak && (
+                    <>
+                      <Separator className="my-0" />
+                      <InfoRow
+                        icon={<AlertCircle className="h-4 w-4 text-red-500" />}
+                        label="Alasan Penolakan"
+                        value={
+                          <span className="leading-relaxed text-red-600 dark:text-red-400">
+                            {row.alasanDitolak}
+                          </span>
+                        }
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* ── Action Footer ── */}
+        {/* ── Action Footer (sticky) ── */}
         {bisaAksi && (
-          <div className="border-t bg-background px-1 py-4">
+          <div className="shrink-0 border-t bg-background px-6 py-4">
             <p className="text-muted-foreground mb-3 text-xs">
               Tindakan verifikasi tidak dapat dibatalkan setelah dikonfirmasi.
             </p>
@@ -363,7 +382,7 @@ export function DetailSheet({
             </div>
           </div>
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }

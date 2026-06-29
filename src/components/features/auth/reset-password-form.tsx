@@ -1,5 +1,4 @@
-// src/routes/auth/reset-password.tsx
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from '@tanstack/react-form'
@@ -9,45 +8,22 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { authClient } from '@/lib/auth-client'
-import { AuthLeftPanel } from './_components/-auth-left-panel'
 
-// BetterAuth mengirim token sebagai query param ?token=...
-const searchSchema = z.object({
-  token: z.string().optional(),
-})
+interface ResetPasswordFormProps {
+  token?: string
+}
 
-export const Route = createFileRoute('/auth/reset-password')({
-  validateSearch: searchSchema,
-  component: ResetPasswordPage,
-})
-
-const resetSchema = z
-  .object({
-    password: z.string().min(8, 'Password minimal 8 karakter'),
-    confirmPassword: z.string(),
-  })
-  .refine((d) => d.password === d.confirmPassword, {
-    message: 'Password tidak cocok',
-    path: ['confirmPassword'],
-  })
-
-function ResetPasswordPage() {
+export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   const router = useRouter()
-  const { token } = Route.useSearch()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   const form = useForm({
     defaultValues: { password: '', confirmPassword: '' },
     onSubmit: async ({ value }) => {
+      // Token sudah dicek di guard bawah, tapi double-check di sini juga aman
       if (!token) {
         toast.error('Token tidak valid. Minta ulang tautan reset password.')
-        return
-      }
-
-      const parsed = resetSchema.safeParse(value)
-      if (!parsed.success) {
-        toast.error(parsed.error.issues[0]?.message)
         return
       }
 
@@ -67,15 +43,15 @@ function ResetPasswordPage() {
           return
         }
 
-        toast.success('Password berhasil diubah!')
-        await router.navigate({ to: '/auth/sign-in' })
+        toast.success('Password berhasil diubah! Silakan masuk.')
+        await router.navigate({ to: '/login' })
       } finally {
         setIsLoading(false)
       }
     },
   })
 
-  // Tampilan jika tidak ada token
+  // Guard: tampilkan state error kalau tidak ada token
   if (!token) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
@@ -84,7 +60,7 @@ function ResetPasswordPage() {
           <p className="text-sm text-muted-foreground">
             Tautan reset password tidak valid atau sudah kadaluarsa.
           </p>
-          <Link to="/auth/forgot-password">
+          <Link to="/forgot-password">
             <Button className="mt-2">Minta Tautan Baru</Button>
           </Link>
         </div>
@@ -94,8 +70,6 @@ function ResetPasswordPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-      <AuthLeftPanel />
-
       <div className="flex h-full items-center justify-center p-4 lg:p-8">
         <div className="w-full max-w-md space-y-6">
           <div className="space-y-1.5 text-center">
@@ -147,7 +121,7 @@ function ResetPasswordPage() {
                   {field.state.meta.isTouched &&
                     field.state.meta.errors.length > 0 && (
                       <p className="text-xs text-destructive">
-                        {field.state.meta.errors[0]?.message}
+                        {String(field.state.meta.errors[0])}
                       </p>
                     )}
                 </div>
@@ -159,12 +133,9 @@ function ResetPasswordPage() {
               validators={{
                 onChangeListenTo: ['password'],
                 onChange: ({ value, fieldApi }) => {
-                  if (!value) {
-                    return { message: 'Konfirmasi password wajib diisi' }
-                  }
-                  if (value !== fieldApi.form.getFieldValue('password')) {
-                    return { message: 'Password tidak cocok' }
-                  }
+                  if (!value) return 'Konfirmasi password wajib diisi'
+                  if (value !== fieldApi.form.getFieldValue('password'))
+                    return 'Password tidak cocok'
                   return undefined
                 },
               }}
@@ -185,7 +156,7 @@ function ResetPasswordPage() {
                   {field.state.meta.isTouched &&
                     field.state.meta.errors.length > 0 && (
                       <p className="text-xs text-destructive">
-                        {field.state.meta.errors[0]?.message}
+                        {String(field.state.meta.errors[0])}
                       </p>
                     )}
                 </div>
@@ -200,7 +171,7 @@ function ResetPasswordPage() {
 
           <div className="text-center">
             <Link
-              to="/auth/sign-in"
+              to="/login"
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 hover:underline"
             >
               <ArrowLeft size={14} />

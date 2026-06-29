@@ -271,7 +271,7 @@ export function buildColumns(
           <div className={`${CELL} py-2.5 px-2`}>
             <Badge
               variant="outline"
-              className={`whitespace-nowrap text-[11px] font-medium ${s.className}`}
+              className={`whitespace-nowrap text-[11px] font-medium rounded-sm ${s.className}`}
             >
               {s.label}
             </Badge>

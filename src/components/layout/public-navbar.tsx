@@ -44,7 +44,7 @@ export function PublicNavbar() {
           </Link>
 
           <Link
-            to="/auth/sign-in"
+            to="/login"
             className="rounded-md bg-primary px-4 py-2 text-primary-foreground transition hover:opacity-90"
           >
             Login

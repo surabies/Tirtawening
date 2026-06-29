@@ -8,7 +8,7 @@ export const Route = createFileRoute('/unauthorized')({
         <p className="text-muted-foreground">
           Akun kamu belum memiliki izin untuk mengakses sistem.
         </p>
-        <Link to="/auth/sign-in">Kembali ke halaman masuk</Link>
+        <Link to="/login">Kembali ke halaman masuk</Link>
       </div>
     </div>
   ),

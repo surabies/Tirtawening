@@ -18,7 +18,7 @@ export const Route = createFileRoute('/_dashboard')({
   beforeLoad: ({ context, location }) => {
     if (!context.session?.user) {
       throw redirect({
-        to: '/auth/sign-in',
+        to: '/login',
         search: { redirect: location.pathname },
       })
     }
@@ -29,7 +29,7 @@ export const Route = createFileRoute('/_dashboard')({
     }
 
     if (status === 'INACTIVE' || status === 'SUSPENDED') {
-      throw redirect({ to: '/auth/sign-in' })
+      throw redirect({ to: '/login' })
     }
 
     if (!ALLOWED_ROLES.includes(role as any)) {

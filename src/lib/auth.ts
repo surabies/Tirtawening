@@ -4,6 +4,7 @@ import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { twoFactor } from 'better-auth/plugins'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { prisma } from '@/lib/prisma'
+// 💡 AKTIPKAN KEMBALI SETELAH PRODUCTION:
 import { dash, sentinel } from '@better-auth/infra'
 
 export const auth = betterAuth({
@@ -126,6 +127,7 @@ export const auth = betterAuth({
       totpOptions: { period: 30, digits: 6 },
       backupCodeOptions: { amount: 10, length: 8 },
     }),
+    // 💡 AKTIPKAN KEMBALI SETELAH PRODUCTION:
     dash({
       apiKey: process.env.BETTER_AUTH_API_KEY!,
     }),

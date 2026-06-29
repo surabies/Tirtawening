@@ -340,33 +340,29 @@ export const navPelayanan: NavGroup[] = [
     label: 'Pelayanan NRW',
     items: [
       {
-        title: 'Non-Revenue Water',
-        url: '#',
+        title: 'Dashboard NRW',
+        url: '/dashboard/pelayanan/nrw',
         icon: 'droplet',
-        // Parent tidak dikunci — anak yang dikunci agar filter rekursif bekerja
-        items: [
-          {
-            title: 'Dashboard NRW',
-            url: '/dashboard/pelayanan/nrw',
-            shortcut: ['n', 'r'],
-            access: staffAccess(NRW),
-          },
-          {
-            title: 'Zona & DMA',
-            url: '/dashboard/pelayanan/nrw/zona',
-            access: staffAccess(NRW),
-          },
-          {
-            title: 'Analisis Kehilangan Air',
-            url: '/dashboard/pelayanan/nrw/analisis',
-            access: staffAccess(NRW),
-          },
-          {
-            title: 'Wilayah & Seksi Cater',
-            url: '/dashboard/pelayanan/nrw/wilayah',
-            access: pelayananAccess(MANAGER_UP),
-          },
-        ],
+        shortcut: ['n', 'r'],
+        access: staffAccess(NRW),
+      },
+      {
+        title: 'Zona & DMA',
+        url: '/dashboard/pelayanan/nrw/zona',
+        icon: 'droplet',
+        access: staffAccess(NRW),
+      },
+      {
+        title: 'Analisis Kehilangan Air',
+        url: '/dashboard/pelayanan/nrw/analisis',
+        icon: 'droplet',
+        access: staffAccess(NRW),
+      },
+      {
+        title: 'Wilayah & Seksi Cater',
+        url: '/dashboard/pelayanan/nrw/wilayah',
+        icon: 'droplet',
+        access: pelayananAccess(MANAGER_UP),
       },
     ],
   },
