@@ -32,7 +32,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
             alasannya (menghindari efek margin/rounded/shadow yang tidak
             diminta). SidebarRail di bawah tetap berfungsi normal pada
             variant default ini. */}
-        <SidebarHeader className="gap-0 border-b border-border p-0">
+        <SidebarHeader className="gap-0 border-border p-0">
           <div className="flex h-12 items-center justify-between px-3">
             <Link to="/overview" className="flex min-w-0 items-center gap-2">
               <img
@@ -111,7 +111,7 @@ function SidebarFooterSection() {
   }
 
   return (
-    <SidebarFooter className="border-t border-border p-0">
+    <SidebarFooter className=" border-border p-0">
       <div className="flex items-center gap-2 p-2">
         <Button
           variant="ghost"
