@@ -1,144 +1,185 @@
-// src/server/routers/laporan-harian.router.ts
+// src/server/trpc/routers/laporan-harian.router.ts
 //
-// Router untuk halaman "Laporan Harian Pencatatan".
-// - stats: 4 metric card (SL & m3 tercatat periode berjalan, vs periode lalu)
-// - progress: tabel progres pencatatan per petugas per hari (semua data,
-//   tanpa filter periode — sesuai kebutuhan monitoring harian)
+// Router untuk halaman "Laporan Periode Cater Per Tanggal" — format matrix
+// (baris = petugas, kolom = tanggal 1-31, sesuai laporan Excel existing).
 
 import { z } from 'zod'
 import { router, protectedProcedure } from '../init'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** periode berjalan dalam format yyyymm (sama seperti LaporanMandiri). */
+/** periode berjalan dalam format yyyymm. */
 function getPeriodeBerjalan(): number {
   const now = new Date()
   return now.getFullYear() * 100 + (now.getMonth() + 1)
 }
 
-/** periode bulan sebelumnya dalam format yyyymm. */
-function getPeriodeLalu(periodeBerjalan: number): number {
-  const year = Math.floor(periodeBerjalan / 100)
-  const month = periodeBerjalan % 100
-  if (month === 1) return (year - 1) * 100 + 12
-  return year * 100 + (month - 1)
+/** Jumlah hari dalam bulan untuk periode yyyymm. */
+function getJumlahHari(periode: number): number {
+  const year = Math.floor(periode / 100)
+  const month = periode % 100
+  return new Date(year, month, 0).getDate()
 }
 
 // ── Router ────────────────────────────────────────────────────────────────────
 
 export const laporanHarianRouter = router({
   /**
-   * 4 metric card:
-   * - Jumlah SL Tercatat & Total m3 Tercatat → periode berjalan
-   * - Jumlah SL Lalu & Total m3 Lalu → periode bulan sebelumnya
-   */
-  stats: protectedProcedure.query(async ({ ctx }) => {
-    const periodeBerjalan = getPeriodeBerjalan()
-    const periodeLalu = getPeriodeLalu(periodeBerjalan)
-
-    const [tercatatAgg, laluAgg] = await Promise.all([
-      ctx.prisma.laporanHarianPetugas.aggregate({
-        where: { periode: periodeBerjalan },
-        _count: { _all: true },
-        _sum: { pemakaian: true },
-      }),
-      ctx.prisma.laporanHarianPetugas.aggregate({
-        where: { periode: periodeLalu },
-        _count: { _all: true },
-        _sum: { pemakaian: true },
-      }),
-    ])
-
-    return {
-      periodeBerjalan,
-      periodeLalu,
-      jumlahSlTercatat: tercatatAgg._count._all,
-      totalM3Tercatat: tercatatAgg._sum.pemakaian ?? 0,
-      jumlahSlLalu: laluAgg._count._all,
-      totalM3Lalu: laluAgg._sum.pemakaian ?? 0,
-    }
-  }),
-
-  /**
-   * Tabel progres pencatatan per petugas per hari.
-   * Tanpa filter periode/tanggal — menampilkan seluruh data,
-   * di-group berdasarkan (pencatatId, tanggalCatat).
+   * Matrix progres pencatatan: baris = petugas, kolom = tanggal 1-31.
+   * Nilai sel = jumlah SL yang dicatat petugas tsb pada tanggal itu,
+   * dibatasi ke periode (bulan) yang dipilih.
    *
-   * Catatan: group-by tanggal dilakukan di level aplikasi (bukan Prisma
-   * groupBy langsung) karena tanggalCatat adalah DateTime — perlu
-   * dinormalisasi ke "hari" (tanpa jam) sebelum di-group.
+   * Target per petugas = jumlah SL unik yang PERNAH dicatat petugas itu
+   * sepanjang histori data (lintas semua periode) — bukan cuma bulan ini.
    */
-  progress: protectedProcedure
+  matrix: protectedProcedure
     .input(
       z.object({
-        page: z.number().min(1).default(1),
-        limit: z.number().min(1).max(200).default(50),
+        periode: z.number().int().optional(), // yyyymm, default bulan berjalan
       }),
     )
     .query(async ({ ctx, input }) => {
-      // Ambil semua baris yang punya tanggalCatat (baris tanpa tanggalCatat
-      // tidak bisa di-group per hari, jadi dikecualikan dari tabel progres).
-      const rows = await ctx.prisma.laporanHarianPetugas.findMany({
-        where: { tanggalCatat: { not: null } },
+      const periode = input.periode ?? getPeriodeBerjalan()
+      const jumlahHari = getJumlahHari(periode)
+
+      // ── 0. Debug: hitung total baris periode ini di DB, terlepas filter ──────
+      const totalDiDbUntukPeriode = await ctx.prisma.laporanHarianPetugas.count(
+        { where: { periode } },
+      )
+      const totalTanggalCatatNull = await ctx.prisma.laporanHarianPetugas.count(
+        { where: { periode, tanggalCatat: null } },
+      )
+
+      // ── 1. Ambil semua baris pencatatan untuk periode terpilih ──────────────
+      const rowsPeriodeIni = await ctx.prisma.laporanHarianPetugas.findMany({
+        where: { periode, tanggalCatat: { not: null } },
         select: {
           pencatatId: true,
           tanggalCatat: true,
-          pemakaian: true,
+          nomorLangganan: true,
           pencatat: {
             select: { id: true, namaLapangan: true, namaLengkap: true },
           },
         },
       })
 
-      // Group by (pencatatId, tanggal-tanpa-jam)
-      type GroupKey = string
-      const groups = new Map<
-        GroupKey,
-        {
-          pencatatId: string | null
-          namaPetugas: string
-          tanggal: string // yyyy-mm-dd
-          jumlahSl: number
-          totalM3: number
-        }
-      >()
+      let dikecualikanTanggalDiLuarRentang = 0
 
-      for (const row of rows) {
-        const tgl = row.tanggalCatat!.toISOString().slice(0, 10) // yyyy-mm-dd
-        const key = `${row.pencatatId ?? 'unknown'}__${tgl}`
+      // ── 2. Ambil daftar SL unik per petugas SEPANJANG HISTORI (untuk target) ─
+      // distinct nomorLangganan per pencatatId, lintas semua periode.
+      const semuaPencatatan = await ctx.prisma.laporanHarianPetugas.findMany({
+        where: { pencatatId: { not: null } },
+        select: { pencatatId: true, nomorLangganan: true },
+        distinct: ['pencatatId', 'nomorLangganan'],
+      })
 
+      const targetByPencatat = new Map<string, number>()
+      for (const row of semuaPencatatan) {
+        if (!row.pencatatId) continue
+        targetByPencatat.set(
+          row.pencatatId,
+          (targetByPencatat.get(row.pencatatId) ?? 0) + 1,
+        )
+      }
+
+      // ── 3. Susun matrix: pencatatId → { namaPetugas, harian: number[31] } ────
+      type PetugasRow = {
+        pencatatId: string
+        namaPetugas: string
+        harian: number[] // index 0 = tanggal 1, dst.
+        totalCatat: number
+        target: number
+        selisih: number
+      }
+
+      const matrixMap = new Map<string, PetugasRow>()
+
+      for (const row of rowsPeriodeIni) {
+        // Baris tanpa pencatat diketahui dikelompokkan terpisah sebagai
+        // "Tidak Diketahui" agar tidak hilang dari laporan.
+        const pencatatId = row.pencatatId ?? 'unknown'
         const namaPetugas =
           row.pencatat?.namaLengkap ??
           row.pencatat?.namaLapangan ??
-          'Tidak diketahui'
+          'Tidak Diketahui'
 
-        const existing = groups.get(key)
-        if (existing) {
-          existing.jumlahSl += 1
-          existing.totalM3 += row.pemakaian
-        } else {
-          groups.set(key, {
-            pencatatId: row.pencatatId,
-            namaPetugas,
-            tanggal: tgl,
-            jumlahSl: 1,
-            totalM3: row.pemakaian,
-          })
+        const tanggal = row.tanggalCatat!.getDate() // 1-31
+        if (tanggal < 1 || tanggal > jumlahHari) {
+          dikecualikanTanggalDiLuarRentang++
+          continue
         }
+
+        let entry = matrixMap.get(pencatatId)
+        if (!entry) {
+          entry = {
+            pencatatId,
+            namaPetugas,
+            harian: Array(jumlahHari).fill(0),
+            totalCatat: 0,
+            target: targetByPencatat.get(pencatatId) ?? 0,
+            selisih: 0,
+          }
+          matrixMap.set(pencatatId, entry)
+        }
+
+        entry.harian[tanggal - 1] += 1
+        entry.totalCatat += 1
       }
 
-      // Urutkan: tanggal terbaru dulu, lalu nama petugas A-Z
-      const sorted = Array.from(groups.values()).sort((a, b) => {
-        if (a.tanggal !== b.tanggal) return b.tanggal.localeCompare(a.tanggal)
+      // Selisih = target - totalCatat (mengikuti contoh Excel: target lebih
+      // besar dari total catat → selisih positif/kekurangan).
+      for (const entry of matrixMap.values()) {
+        entry.selisih = entry.target - entry.totalCatat
+      }
+
+      // Urutkan nama petugas A-Z, "Tidak Diketahui" selalu di akhir.
+      const items = Array.from(matrixMap.values()).sort((a, b) => {
+        if (a.pencatatId === 'unknown') return 1
+        if (b.pencatatId === 'unknown') return -1
         return a.namaPetugas.localeCompare(b.namaPetugas)
       })
 
-      // Pagination manual (karena grouping dilakukan di aplikasi)
-      const total = sorted.length
-      const totalPages = Math.max(1, Math.ceil(total / input.limit))
-      const start = (input.page - 1) * input.limit
-      const items = sorted.slice(start, start + input.limit)
+      // ── 4. Baris Total (sum per kolom + sum total/target/selisih) ───────────
+      const totalHarian = Array(jumlahHari).fill(0)
+      let totalCatatSum = 0
+      let targetSum = 0
 
-      return { items, total, totalPages, page: input.page }
+      for (const item of items) {
+        item.harian.forEach((v, i) => {
+          totalHarian[i] += v
+        })
+        totalCatatSum += item.totalCatat
+        targetSum += item.target
+      }
+
+      // ── 5. Info hari kerja (Senin-Sabtu = kerja, Minggu = libur) ─────────────
+      const year = Math.floor(periode / 100)
+      const month = periode % 100
+      const hariInfo = Array.from({ length: jumlahHari }, (_, i) => {
+        const date = new Date(year, month - 1, i + 1)
+        const isMinggu = date.getDay() === 0
+        return { tanggal: i + 1, isHariKerja: !isMinggu }
+      })
+
+      return {
+        periode,
+        jumlahHari,
+        hariInfo,
+        items,
+        total: {
+          harian: totalHarian,
+          totalCatat: totalCatatSum,
+          target: targetSum,
+          selisih: targetSum - totalCatatSum,
+        },
+        debug: {
+          totalDiDbUntukPeriode,
+          totalTanggalCatatNull,
+          dikecualikanTanggalDiLuarRentang,
+          totalTerhitungDiMatrix: totalCatatSum,
+          // totalDiDbUntukPeriode harus = totalTanggalCatatNull +
+          // dikecualikanTanggalDiLuarRentang + totalTerhitungDiMatrix
+        },
+      }
     }),
 })

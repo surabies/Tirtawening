@@ -1,20 +1,7 @@
 import { useState } from 'react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
+import { useTRPC } from '@/integrations/trpc/react'
+import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -22,184 +9,264 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useTRPC } from '@/integrations/trpc/react'
-import { useQuery } from '@tanstack/react-query'
+import { cn } from '@/lib/utils'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function formatTanggal(tanggal: string): string {
-  // tanggal dalam format yyyy-mm-dd
-  const [year, month, day] = tanggal.split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString('id-ID', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
+function buildPeriodeOptions(bulanTerakhir = 12) {
+  const BULAN = [
+    '',
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+  ]
+  const now = new Date()
+  const opts: { value: number; label: string }[] = []
+  for (let i = 0; i < bulanTerakhir; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const yyyymm = d.getFullYear() * 100 + (d.getMonth() + 1)
+    opts.push({
+      value: yyyymm,
+      label: `${BULAN[d.getMonth() + 1]} ${d.getFullYear()}`,
+    })
+  }
+  return opts
+}
+
+function formatPeriodeLabel(periode: number): string {
+  const BULAN = [
+    '',
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+  ]
+  const month = periode % 100
+  const year = Math.floor(periode / 100)
+  return `${BULAN[month]} ${year}`
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function LaporanHarianProgressTable() {
+export function LaporanHarianMatrixTable() {
   const trpc = useTRPC()
-
-  const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(50)
+  const periodeOptions = buildPeriodeOptions(12)
+  const [periode, setPeriode] = useState<number>(periodeOptions[0].value)
 
   const { data, isLoading } = useQuery(
-    trpc.laporanHarian.progress.queryOptions({ page, limit }),
+    trpc.laporanHarian.matrix.queryOptions({ periode }),
   )
-
-  const items = data?.items ?? []
-  const total = data?.total ?? 0
-  const totalPages = data?.totalPages ?? 1
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">
-          Progres Pencatatan per Petugas
-        </h3>
-        <span className="text-muted-foreground text-xs">
-          {total.toLocaleString('id-ID')} entri
-        </span>
-      </div>
-
-      <div className="overflow-hidden rounded-sm border border-border">
-        <div className="overflow-x-auto">
-          <Table className="[&_td]:border-b [&_td]:border-border [&_th]:border-b [&_th]:border-border">
-            <TableHeader>
-              <TableRow className="bg-muted/40 hover:bg-muted/40">
-                <TableHead className="h-9">Tanggal</TableHead>
-                <TableHead className="h-9">Petugas</TableHead>
-                <TableHead className="h-9 text-right">Jumlah SL</TableHead>
-                <TableHead className="h-9 text-right">Total m³</TableHead>
-                <TableHead className="h-9 text-right">
-                  Rata-rata m³/SL
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 8 }).map((_, i) => (
-                  <TableRow key={i} className="border-b border-border">
-                    {Array.from({ length: 5 }).map((_, ci) => (
-                      <TableCell key={ci} className="py-2.5">
-                        <Skeleton className="h-4 w-full rounded" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : items.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="text-muted-foreground h-32 text-center text-sm"
-                  >
-                    Belum ada data pencatatan.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                items.map((row) => (
-                  <TableRow
-                    key={`${row.pencatatId ?? 'unknown'}-${row.tanggal}`}
-                    className="hover:bg-muted/20"
-                  >
-                    <TableCell className="py-2.5 text-sm">
-                      {formatTanggal(row.tanggal)}
-                    </TableCell>
-                    <TableCell className="py-2.5 text-sm font-medium">
-                      {row.namaPetugas}
-                    </TableCell>
-                    <TableCell className="py-2.5 text-right text-sm tabular-nums">
-                      {row.jumlahSl.toLocaleString('id-ID')}
-                    </TableCell>
-                    <TableCell className="py-2.5 text-right text-sm tabular-nums">
-                      {row.totalM3.toLocaleString('id-ID')}
-                    </TableCell>
-                    <TableCell className="py-2.5 text-right text-sm tabular-nums text-muted-foreground">
-                      {(row.totalM3 / row.jumlahSl).toFixed(1)}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      {/* pagination */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground text-sm">
-            Baris per halaman
-          </span>
-          <Select
-            value={limit.toString()}
-            onValueChange={(v) => {
-              setLimit(parseInt(v))
-              setPage(1)
-            }}
-          >
-            <SelectTrigger className="h-8 w-18 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[25, 50, 100, 200].map((n) => (
-                <SelectItem key={n} value={n.toString()}>
-                  {n}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <h3 className="text-sm font-semibold text-foreground">
+          Laporan Periode Cater Per Tanggal
+        </h3>
 
-        <div className="flex items-center gap-4">
-          <span className="text-muted-foreground text-sm tabular-nums">
-            Halaman <span className="text-foreground font-medium">{page}</span>{' '}
-            dari{' '}
-            <span className="text-foreground font-medium">{totalPages}</span>
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setPage(1)}
-              disabled={page <= 1}
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setPage(totalPages)}
-              disabled={page >= totalPages}
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
-          </div>
+        <Select
+          value={periode.toString()}
+          onValueChange={(v) => setPeriode(parseInt(v))}
+        >
+          <SelectTrigger className="h-9 w-44 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {periodeOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value.toString()}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {isLoading ? (
+        <Skeleton className="h-96 w-full rounded-sm" />
+      ) : !data || data.items.length === 0 ? (
+        <div className="text-muted-foreground flex h-32 items-center justify-center rounded-sm border border-border text-sm">
+          Belum ada data pencatatan untuk periode {formatPeriodeLabel(periode)}.
         </div>
+      ) : (
+        <MatrixTable data={data} />
+      )}
+    </div>
+  )
+}
+
+// ── Matrix table itself ──────────────────────────────────────────────────────
+
+type MatrixData = NonNullable<
+  ReturnType<
+    typeof useQuery<{
+      periode: number
+      jumlahHari: number
+      hariInfo: { tanggal: number; isHariKerja: boolean }[]
+      items: {
+        pencatatId: string
+        namaPetugas: string
+        harian: number[]
+        totalCatat: number
+        target: number
+        selisih: number
+      }[]
+      total: {
+        harian: number[]
+        totalCatat: number
+        target: number
+        selisih: number
+      }
+    }>
+  >['data']
+>
+
+function MatrixTable({ data }: { data: MatrixData }) {
+  return (
+    <div className="overflow-hidden rounded-sm border border-border">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-xs">
+          <thead>
+            {/* Baris judul kolom Tanggal */}
+            <tr>
+              <th
+                rowSpan={2}
+                className="sticky left-0 z-10 w-10 border-b border-r border-border bg-blue-600 px-2 py-2 text-center font-semibold text-white"
+              >
+                No
+              </th>
+              <th
+                rowSpan={2}
+                className="sticky left-10 z-10 min-w-[140px] border-b border-r border-border bg-blue-600 px-3 py-2 text-left font-semibold text-white"
+              >
+                Nama Cater
+              </th>
+              <th
+                colSpan={data.jumlahHari}
+                className="border-b border-r border-border bg-blue-600 py-1.5 text-center font-semibold text-white"
+              >
+                Tanggal
+              </th>
+              <th
+                rowSpan={2}
+                className="min-w-[80px] border-b border-r border-border bg-blue-700 px-2 py-2 text-center font-semibold text-white"
+              >
+                Total Catat
+              </th>
+              <th
+                rowSpan={2}
+                className="min-w-[70px] border-b border-r border-border bg-blue-700 px-2 py-2 text-center font-semibold text-white"
+              >
+                Target
+              </th>
+              <th
+                rowSpan={2}
+                className="min-w-[70px] border-b border-border bg-blue-700 px-2 py-2 text-center font-semibold text-white"
+              >
+                Selisih
+              </th>
+            </tr>
+            <tr>
+              {data.hariInfo.map((h) => (
+                <th
+                  key={h.tanggal}
+                  className={cn(
+                    'min-w-[34px] border-b border-r border-border px-1 py-1.5 text-center font-semibold text-white',
+                    h.isHariKerja ? 'bg-emerald-600' : 'bg-red-600',
+                  )}
+                >
+                  {h.tanggal}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {data.items.map((row, idx) => (
+              <tr key={row.pencatatId} className="hover:bg-muted/30">
+                <td className="sticky left-0 z-10 border-b border-r border-border bg-card px-2 py-1.5 text-center tabular-nums">
+                  {idx + 1}
+                </td>
+                <td className="sticky left-10 z-10 border-b border-r border-border bg-card px-3 py-1.5 font-medium uppercase">
+                  {row.namaPetugas}
+                </td>
+                {row.harian.map((value, i) => (
+                  <td
+                    key={i}
+                    className={cn(
+                      'border-b border-r border-border px-1 py-1.5 text-center tabular-nums',
+                      value === 0 &&
+                        data.hariInfo[i]?.isHariKerja &&
+                        'bg-red-50 text-muted-foreground dark:bg-red-950/20',
+                    )}
+                  >
+                    {value}
+                  </td>
+                ))}
+                <td className="border-b border-r border-border px-2 py-1.5 text-center font-semibold tabular-nums">
+                  {row.totalCatat.toLocaleString('id-ID')}
+                </td>
+                <td className="border-b border-r border-border px-2 py-1.5 text-center tabular-nums text-muted-foreground">
+                  {row.target.toLocaleString('id-ID')}
+                </td>
+                <td
+                  className={cn(
+                    'border-b border-border px-2 py-1.5 text-center font-semibold tabular-nums',
+                    row.selisih > 0
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-emerald-600 dark:text-emerald-400',
+                  )}
+                >
+                  {row.selisih.toLocaleString('id-ID')}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+
+          <tfoot>
+            <tr className="bg-muted/50 font-semibold">
+              <td
+                colSpan={2}
+                className="sticky left-0 z-10 border-r border-border bg-muted/80 px-3 py-1.5 text-center"
+              >
+                Total
+              </td>
+              {data.total.harian.map((value, i) => (
+                <td
+                  key={i}
+                  className="border-r border-border px-1 py-1.5 text-center tabular-nums"
+                >
+                  {value.toLocaleString('id-ID')}
+                </td>
+              ))}
+              <td className="border-r border-border px-2 py-1.5 text-center tabular-nums">
+                {data.total.totalCatat.toLocaleString('id-ID')}
+              </td>
+              <td className="border-r border-border px-2 py-1.5 text-center tabular-nums">
+                {data.total.target.toLocaleString('id-ID')}
+              </td>
+              <td className="px-2 py-1.5 text-center tabular-nums text-red-600 dark:text-red-400">
+                {data.total.selisih.toLocaleString('id-ID')}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </div>
   )
