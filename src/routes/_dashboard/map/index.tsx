@@ -1,8 +1,6 @@
-import { useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 
-// Import Navbar & Page Layout TanStack
-import { NavbarFilter, useNavbar } from '@/components/layout/navbar'
+// Import Page Layout TanStack
 import { PageContainer } from '@/components/layout/page/page-container'
 import { PageHeader } from '@/components/layout/page/page-header'
 
@@ -12,20 +10,11 @@ import { MapDetailPanel } from '@/components/features/map/_components/MapDetailP
 import { MapSelectionProvider } from '@/components/features/map/_components/MapSelectionContext'
 import { MapLayerProvider } from '@/components/features/map/_components/shared/Maplayercontext'
 
-// 1. PATH DI SINI HARUS SESUAI LOKASI FOLDER: /_dashboard/map/
 export const Route = createFileRoute('/_dashboard/map/')({
   component: MapPage,
 })
 
 function MapPage() {
-  const { setContent } = useNavbar()
-
-  // 2. Efek filter navbar khas dashboard kamu
-  useEffect(() => {
-    setContent(<NavbarFilter />)
-    return () => setContent(null)
-  }, [setContent])
-
   return (
     <PageContainer
       header={
@@ -35,10 +24,9 @@ function MapPage() {
         />
       }
     >
-      {/* 3. Provider dibungkus di sini agar tidak ada error useMapSelection lagi */}
       <MapLayerProvider>
         <MapSelectionProvider>
-          {/* LAYOUT GRID PETA (Dipertahankan dari kode Next.js kamu) */}
+          {/* LAYOUT GRID PETA */}
           <div className="flex flex-col items-stretch gap-4 lg:grid lg:h-[calc(100vh-14rem)] lg:grid-cols-[65%_minmax(0,1fr)]">
             {/* KOLOM KIRI: Tempat Komponen Maplibre */}
             <div className="relative h-[450px] w-full overflow-hidden rounded-md border border-border shadow-sm lg:h-full">

@@ -67,17 +67,20 @@ function DashboardLayout() {
   return (
     <NavbarProvider>
       <div className="flex h-screen overflow-hidden">
+        {/* Sidebar bersifat fixed (lepas dari flow), jadi tidak otomatis
+            mengambil ruang di flex layout ini */}
         <Sidebar />
 
-        <div
-          className={cn(
-            'flex min-h-0 min-w-0 flex-1 flex-col',
-            layout.sidebarWidth,
-          )}
-        >
+        {/* Spacer: meniru lebar sidebar agar Navbar & main tidak ketutup
+            sidebar yang fixed. Disembunyikan di mobile karena sidebar
+            di mobile juga tersembunyi (di-translate keluar layar). */}
+        <div className={cn('hidden shrink-0 lg:block', layout.sidebarWidth)} />
+
+        {/* Wrapper utama untuk Navbar dan Main */}
+        <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
           <Navbar />
 
-          <main className="flex-1 overflow-auto min-h-0">
+          <main className="flex-1 overflow-auto">
             <Outlet />
           </main>
         </div>

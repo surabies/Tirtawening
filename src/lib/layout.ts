@@ -8,7 +8,7 @@ export const layout = {
   /**
    * Horizontal padding halaman
    */
-  pagePadding: 'px-4 md:px-6',
+  pagePadding: 'px-4 md:px-6 lg:px-8',
 
   /**
    * Vertical padding halaman
@@ -18,7 +18,7 @@ export const layout = {
   /**
    * Max width halaman
    */
-  pageMaxWidth: 'max-w-7xl',
+  pageMaxWidth: 'max-w-[1600px]',
 
   /**
    * Gap antar section
@@ -33,5 +33,5 @@ export const layout = {
   /**
    * Lebar Sidebar Desktop
    */
-  sidebarWidth: 'lg:pl-72',
+  sidebarWidth: 'w-72',
 } as const

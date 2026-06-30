@@ -24,6 +24,7 @@ import { Route as DashboardPelangganIndexRouteImport } from './routes/_dashboard
 import { Route as DashboardOverviewIndexRouteImport } from './routes/_dashboard/overview/index'
 import { Route as DashboardMapIndexRouteImport } from './routes/_dashboard/map/index'
 import { Route as DashboardLaporanMandiriIndexRouteImport } from './routes/_dashboard/laporan-mandiri/index'
+import { Route as DashboardLaporanHarianIndexRouteImport } from './routes/_dashboard/laporan-harian/index'
 import { Route as AuthTwoFactorIndexRouteImport } from './routes/_auth/two-factor/index'
 import { Route as AuthSignUpIndexRouteImport } from './routes/_auth/sign-up/index'
 import { Route as AuthResetPasswordIndexRouteImport } from './routes/_auth/reset-password/index'
@@ -106,6 +107,12 @@ const DashboardLaporanMandiriIndexRoute =
     path: '/laporan-mandiri/',
     getParentRoute: () => DashboardRouteRoute,
   } as any)
+const DashboardLaporanHarianIndexRoute =
+  DashboardLaporanHarianIndexRouteImport.update({
+    id: '/laporan-harian/',
+    path: '/laporan-harian/',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
 const AuthTwoFactorIndexRoute = AuthTwoFactorIndexRouteImport.update({
   id: '/two-factor/',
   path: '/two-factor/',
@@ -153,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/reset-password/': typeof AuthResetPasswordIndexRoute
   '/sign-up/': typeof AuthSignUpIndexRoute
   '/two-factor/': typeof AuthTwoFactorIndexRoute
+  '/laporan-harian/': typeof DashboardLaporanHarianIndexRoute
   '/laporan-mandiri/': typeof DashboardLaporanMandiriIndexRoute
   '/map/': typeof DashboardMapIndexRoute
   '/overview/': typeof DashboardOverviewIndexRoute
@@ -174,6 +182,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof AuthResetPasswordIndexRoute
   '/sign-up': typeof AuthSignUpIndexRoute
   '/two-factor': typeof AuthTwoFactorIndexRoute
+  '/laporan-harian': typeof DashboardLaporanHarianIndexRoute
   '/laporan-mandiri': typeof DashboardLaporanMandiriIndexRoute
   '/map': typeof DashboardMapIndexRoute
   '/overview': typeof DashboardOverviewIndexRoute
@@ -199,6 +208,7 @@ export interface FileRoutesById {
   '/_auth/reset-password/': typeof AuthResetPasswordIndexRoute
   '/_auth/sign-up/': typeof AuthSignUpIndexRoute
   '/_auth/two-factor/': typeof AuthTwoFactorIndexRoute
+  '/_dashboard/laporan-harian/': typeof DashboardLaporanHarianIndexRoute
   '/_dashboard/laporan-mandiri/': typeof DashboardLaporanMandiriIndexRoute
   '/_dashboard/map/': typeof DashboardMapIndexRoute
   '/_dashboard/overview/': typeof DashboardOverviewIndexRoute
@@ -222,6 +232,7 @@ export interface FileRouteTypes {
     | '/reset-password/'
     | '/sign-up/'
     | '/two-factor/'
+    | '/laporan-harian/'
     | '/laporan-mandiri/'
     | '/map/'
     | '/overview/'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sign-up'
     | '/two-factor'
+    | '/laporan-harian'
     | '/laporan-mandiri'
     | '/map'
     | '/overview'
@@ -267,6 +279,7 @@ export interface FileRouteTypes {
     | '/_auth/reset-password/'
     | '/_auth/sign-up/'
     | '/_auth/two-factor/'
+    | '/_dashboard/laporan-harian/'
     | '/_dashboard/laporan-mandiri/'
     | '/_dashboard/map/'
     | '/_dashboard/overview/'
@@ -396,6 +409,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLaporanMandiriIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/_dashboard/laporan-harian/': {
+      id: '/_dashboard/laporan-harian/'
+      path: '/laporan-harian'
+      fullPath: '/laporan-harian/'
+      preLoaderRoute: typeof DashboardLaporanHarianIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/_auth/two-factor/': {
       id: '/_auth/two-factor/'
       path: '/two-factor'
@@ -469,6 +489,7 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 )
 
 interface DashboardRouteRouteChildren {
+  DashboardLaporanHarianIndexRoute: typeof DashboardLaporanHarianIndexRoute
   DashboardLaporanMandiriIndexRoute: typeof DashboardLaporanMandiriIndexRoute
   DashboardMapIndexRoute: typeof DashboardMapIndexRoute
   DashboardOverviewIndexRoute: typeof DashboardOverviewIndexRoute
@@ -478,6 +499,7 @@ interface DashboardRouteRouteChildren {
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardLaporanHarianIndexRoute: DashboardLaporanHarianIndexRoute,
   DashboardLaporanMandiriIndexRoute: DashboardLaporanMandiriIndexRoute,
   DashboardMapIndexRoute: DashboardMapIndexRoute,
   DashboardOverviewIndexRoute: DashboardOverviewIndexRoute,
