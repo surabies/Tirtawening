@@ -1,3 +1,4 @@
+// src/lib/layout.ts
 /**
  * Layout Design Tokens
  *
@@ -31,7 +32,7 @@ export const layout = {
   navbarHeight: 'h-16',
 
   /**
-   * Lebar Sidebar Desktop
+   * Sidebar width di desktop (padding placeholder)
    */
-  sidebarWidth: 'w-72',
+  sidebarWidth: 'w-64',
 } as const

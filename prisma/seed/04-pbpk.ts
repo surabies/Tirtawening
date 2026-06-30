@@ -10,8 +10,8 @@
 // Field tglaktif = Excel date serial float → dikonversi via excelDateToJs()
 // kode_wilayah "KC30401" → rute "KC304", noUrut 1
 
-import { prisma } from "./client"
-import { JenisMutasi } from "@/generated/prisma/client"
+import { prisma } from './client'
+import { JenisMutasi } from '@/generated/prisma/client'
 import {
   readCsv,
   log,
@@ -21,13 +21,13 @@ import {
   mapTarif,
   mapUkuranMeter,
   excelDateToJs,
-} from "./utils"
+} from './utils'
 
 /**
  * Decode kode_wilayah: "KC30401" → { ruteKode: "KC304", noUrut: 1 }
  */
 function decodeKodeWilayah(
-  raw: string
+  raw: string,
 ): { ruteKode: string; noUrut: number } | null {
   if (!raw || raw.length < 3) return null
   const noUrut = parseInt(raw.slice(-2))
@@ -37,9 +37,9 @@ function decodeKodeWilayah(
 }
 
 export async function seedPBPK(csvPath: string) {
-  log("04-PBPK", `Baca file: ${csvPath}`)
+  log('04-PBPK', `Baca file: ${csvPath}`)
   const rows = readCsv(csvPath)
-  log("04-PBPK", `Total baris: ${rows.length}`)
+  log('04-PBPK', `Total baris: ${rows.length}`)
 
   const allRute = await prisma.rute.findMany()
   const allKec = await prisma.kecamatan.findMany()
@@ -54,31 +54,35 @@ export async function seedPBPK(csvPath: string) {
   let stats = { pb: 0, pk: 0, pkBaru: 0, skip: 0 }
 
   for (const row of rows) {
-    const nolg = normalizeNolg(row["nolg"] || row["nolangganan"])
-    if (!nolg || nolg === "00000000000") {
+    const nolg = normalizeNolg(row['nolg'] || row['nolangganan'])
+    if (!nolg || nolg === '00000000000') {
       stats.skip++
       continue
     }
 
-    const jenis = (row["mutasian"]?.trim().toUpperCase() as "PB" | "PK") ?? "PB"
-    const periode = 202605
-    const nometer = row["nometer"]?.trim()
-    const tarifKode = row["kd_goltarif"]?.trim()
-    const tarifId = cacheTarif.get(tarifKode ?? "") ?? null
-    const kecId = cacheKec.get(row["kd_kecamatan"]?.trim() ?? "") ?? null
-    const kelId = cacheKel.get(row["kd_kelurahan"]?.trim() ?? "") ?? null
-    const notelp = normalizeNotelp(row["notelp"])
-    const tanggalAktif = excelDateToJs(row["tglaktif"])
+    const jenis = (row['mutasian']?.trim().toUpperCase() as 'PB' | 'PK') ?? 'PB'
 
-    const decoded = decodeKodeWilayah(row["kode_wilayah"]?.trim() ?? "")
-    const ruteKode = decoded?.ruteKode ?? row["kd_rute"]?.trim()
+    // Mengambil periode secara dinamis dari kolom 'thbl' atau 'periode' di file CSV
+    const periodeRaw =
+      row['thbl']?.toString().trim() || row['periode']?.toString().trim()
+    const periode = periodeRaw ? parseInt(periodeRaw, 10) : 202601 // 202601 sebagai fallback jika kolom kosong
+    const nometer = row['nometer']?.trim()
+    const tarifKode = row['kd_goltarif']?.trim()
+    const tarifId = cacheTarif.get(tarifKode ?? '') ?? null
+    const kecId = cacheKec.get(row['kd_kecamatan']?.trim() ?? '') ?? null
+    const kelId = cacheKel.get(row['kd_kelurahan']?.trim() ?? '') ?? null
+    const notelp = normalizeNotelp(row['notelp'])
+    const tanggalAktif = excelDateToJs(row['tglaktif'])
+
+    const decoded = decodeKodeWilayah(row['kode_wilayah']?.trim() ?? '')
+    const ruteKode = decoded?.ruteKode ?? row['kd_rute']?.trim()
     const noUrut = decoded?.noUrut ?? null
 
     let ruteId: string | null = null
     if (ruteKode) {
       if (!cacheRute.has(ruteKode)) {
         const seksi = await prisma.seksiCater.findFirst({
-          where: { kode: "C5" },
+          where: { kode: 'C5' },
         })
         if (seksi) {
           const rute = await prisma.rute.upsert({
@@ -94,32 +98,32 @@ export async function seedPBPK(csvPath: string) {
       }
     }
 
-    const rt = row["rt"] ? String(row["rt"]).padStart(3, "0") : null
-    const rw = row["rw"] ? String(row["rw"]).padStart(3, "0") : null
+    const rt = row['rt'] ? String(row['rt']).padStart(3, '0') : null
+    const rw = row['rw'] ? String(row['rw']).padStart(3, '0') : null
 
     const geoLong =
-      row["geo_long"] && parseFloat(row["geo_long"]) < 200
-        ? parseFloat(row["geo_long"])
+      row['geo_long'] && parseFloat(row['geo_long']) < 200
+        ? parseFloat(row['geo_long'])
         : null
     const geoLat =
-      row["goe_lat"] && parseFloat(row["goe_lat"]) < 200
-        ? parseFloat(row["goe_lat"])
+      row['goe_lat'] && parseFloat(row['goe_lat']) < 200
+        ? parseFloat(row['goe_lat'])
         : null
 
-    if (jenis === "PB") {
+    if (jenis === 'PB') {
       // ── Pasang Baru ───────────────────────────────────────────────────
       const pelanggan = await prisma.pelanggan.upsert({
         where: { nomorLangganan: nolg },
         update: {
-          nama: row["nama"]?.trim(),
-          alamat: row["alamat"]?.trim(),
+          nama: row['nama']?.trim(),
+          alamat: row['alamat']?.trim(),
           rt,
           rw,
           notelp,
           geoLat,
           geoLong,
-          jumlahPenghuni: row["jmlpenghuni"]
-            ? parseInt(row["jmlpenghuni"])
+          jumlahPenghuni: row['jmlpenghuni']
+            ? parseInt(row['jmlpenghuni'])
             : null,
           tarifGolonganId: tarifId,
           kecamatanId: kecId,
@@ -129,15 +133,15 @@ export async function seedPBPK(csvPath: string) {
         create: {
           nomorLangganan: nolg,
           nomorPersil: nolg,
-          nama: row["nama"]?.trim() ?? "",
-          alamat: row["alamat"]?.trim() ?? "",
+          nama: row['nama']?.trim() ?? '',
+          alamat: row['alamat']?.trim() ?? '',
           rt,
           rw,
           notelp,
           geoLat,
           geoLong,
-          jumlahPenghuni: row["jmlpenghuni"]
-            ? parseInt(row["jmlpenghuni"])
+          jumlahPenghuni: row['jmlpenghuni']
+            ? parseInt(row['jmlpenghuni'])
             : null,
           tarifGolonganId: tarifId,
           kecamatanId: kecId,
@@ -154,8 +158,8 @@ export async function seedPBPK(csvPath: string) {
           await prisma.meter.create({
             data: {
               nomorMeter: nometer,
-              merkKode: normalizeMerk(row["kd_merkmeter"]),
-              ukuran: mapUkuranMeter(row["kd_ukmeter"]),
+              merkKode: normalizeMerk(row['kd_merkmeter']),
+              ukuran: mapUkuranMeter(row['kd_ukmeter']),
               tanggalPasang: tanggalAktif,
               isAktif: true,
               pelangganId: pelanggan.id,
@@ -175,22 +179,22 @@ export async function seedPBPK(csvPath: string) {
             jenis: JenisMutasi.PB,
             periode,
             nomorMeterBaru: nometer ?? null,
-            merkMeterBaru: normalizeMerk(row["kd_merkmeter"]),
-            ukuranMeterBaru: mapUkuranMeter(row["kd_ukmeter"]),
+            merkMeterBaru: normalizeMerk(row['kd_merkmeter']),
+            ukuranMeterBaru: mapUkuranMeter(row['kd_ukmeter']),
             tarifBaru: mapTarif(tarifKode),
             ruteBaru: ruteKode ?? null,
-            kodeWilayahBaru: row["kode_wilayah"]?.trim() ?? null,
+            kodeWilayahBaru: row['kode_wilayah']?.trim() ?? null,
             noUrut,
-            jumlahPenghuni: row["jmlpenghuni"]
-              ? parseInt(row["jmlpenghuni"])
+            jumlahPenghuni: row['jmlpenghuni']
+              ? parseInt(row['jmlpenghuni'])
               : null,
             tanggalAktif,
-            statusAktif: row["sta_aktif"] ? parseInt(row["sta_aktif"]) : null,
-            updaterKode: row["updater"]?.trim() ?? null,
+            statusAktif: row['sta_aktif'] ? parseInt(row['sta_aktif']) : null,
+            updaterKode: row['updater']?.trim() ?? null,
           },
         })
       }
-    } else if (jenis === "PK") {
+    } else if (jenis === 'PK') {
       // ── Perubahan Kontrak ─────────────────────────────────────────────
       let pelanggan = await prisma.pelanggan.findUnique({
         where: { nomorLangganan: nolg },
@@ -200,22 +204,22 @@ export async function seedPBPK(csvPath: string) {
         // Pelanggan lama pasang kembali — tidak ada di DB periode ini
         // Buat sebagai pelanggan baru dengan mutasi PK
         log(
-          "04-PBPK",
-          `ℹ PK: pelanggan ${nolg} (${row["nama"]?.trim()}) tidak ada di DB → buat baru`
+          '04-PBPK',
+          `ℹ PK: pelanggan ${nolg} (${row['nama']?.trim()}) tidak ada di DB → buat baru`,
         )
         pelanggan = await prisma.pelanggan.create({
           data: {
             nomorLangganan: nolg,
             nomorPersil: nolg,
-            nama: row["nama"]?.trim() ?? "",
-            alamat: row["alamat"]?.trim() ?? "",
+            nama: row['nama']?.trim() ?? '',
+            alamat: row['alamat']?.trim() ?? '',
             rt,
             rw,
             notelp,
             geoLat,
             geoLong,
-            jumlahPenghuni: row["jmlpenghuni"]
-              ? parseInt(row["jmlpenghuni"])
+            jumlahPenghuni: row['jmlpenghuni']
+              ? parseInt(row['jmlpenghuni'])
               : null,
             tarifGolonganId: tarifId,
             kecamatanId: kecId,
@@ -228,8 +232,8 @@ export async function seedPBPK(csvPath: string) {
           await prisma.meter.create({
             data: {
               nomorMeter: nometer,
-              merkKode: normalizeMerk(row["kd_merkmeter"]),
-              ukuran: mapUkuranMeter(row["kd_ukmeter"]),
+              merkKode: normalizeMerk(row['kd_merkmeter']),
+              ukuran: mapUkuranMeter(row['kd_ukmeter']),
               tanggalPasang: tanggalAktif,
               isAktif: true,
               pelangganId: pelanggan.id,
@@ -245,8 +249,8 @@ export async function seedPBPK(csvPath: string) {
             tarifGolonganId: tarifId ?? undefined,
             ruteId: ruteId ?? undefined,
             notelp: notelp ?? undefined,
-            jumlahPenghuni: row["jmlpenghuni"]
-              ? parseInt(row["jmlpenghuni"])
+            jumlahPenghuni: row['jmlpenghuni']
+              ? parseInt(row['jmlpenghuni'])
               : undefined,
           },
         })
@@ -255,16 +259,22 @@ export async function seedPBPK(csvPath: string) {
           const aktif = await prisma.meter.findFirst({
             where: { pelangganId: pelanggan.id, isAktif: true },
           })
+
           if (aktif && aktif.nomorMeter !== nometer) {
-            await prisma.meter.update({
-              where: { id: aktif.id },
-              data: { isAktif: false },
-            })
-            await prisma.meter.create({
-              data: {
+            // Gunakan upsert berdasarkan pelangganId agar tidak melanggar One-to-One constraint
+            await prisma.meter.upsert({
+              where: { pelangganId: pelanggan.id },
+              update: {
                 nomorMeter: nometer,
-                merkKode: normalizeMerk(row["kd_merkmeter"]),
-                ukuran: mapUkuranMeter(row["kd_ukmeter"]),
+                merkKode: normalizeMerk(row['kd_merkmeter']),
+                ukuran: mapUkuranMeter(row['kd_ukmeter']),
+                tanggalPasang: tanggalAktif,
+                isAktif: true,
+              },
+              create: {
+                nomorMeter: nometer,
+                merkKode: normalizeMerk(row['kd_merkmeter']),
+                ukuran: mapUkuranMeter(row['kd_ukmeter']),
                 tanggalPasang: tanggalAktif,
                 isAktif: true,
                 pelangganId: pelanggan.id,
@@ -286,18 +296,18 @@ export async function seedPBPK(csvPath: string) {
             jenis: JenisMutasi.PK,
             periode,
             nomorMeterBaru: nometer ?? null,
-            merkMeterBaru: normalizeMerk(row["kd_merkmeter"]),
-            ukuranMeterBaru: mapUkuranMeter(row["kd_ukmeter"]),
+            merkMeterBaru: normalizeMerk(row['kd_merkmeter']),
+            ukuranMeterBaru: mapUkuranMeter(row['kd_ukmeter']),
             tarifBaru: mapTarif(tarifKode),
             ruteBaru: ruteKode ?? null,
-            kodeWilayahBaru: row["kode_wilayah"]?.trim() ?? null,
+            kodeWilayahBaru: row['kode_wilayah']?.trim() ?? null,
             noUrut,
-            jumlahPenghuni: row["jmlpenghuni"]
-              ? parseInt(row["jmlpenghuni"])
+            jumlahPenghuni: row['jmlpenghuni']
+              ? parseInt(row['jmlpenghuni'])
               : null,
             tanggalAktif,
-            statusAktif: row["sta_aktif"] ? parseInt(row["sta_aktif"]) : null,
-            updaterKode: row["updater"]?.trim() ?? null,
+            statusAktif: row['sta_aktif'] ? parseInt(row['sta_aktif']) : null,
+            updaterKode: row['updater']?.trim() ?? null,
           },
         })
       }
@@ -305,7 +315,7 @@ export async function seedPBPK(csvPath: string) {
   }
 
   log(
-    "04-PBPK",
-    `✓ PB: ${stats.pb}, PK update: ${stats.pk}, PK baru: ${stats.pkBaru}, Skip: ${stats.skip}`
+    '04-PBPK',
+    `✓ PB: ${stats.pb}, PK update: ${stats.pk}, PK baru: ${stats.pkBaru}, Skip: ${stats.skip}`,
   )
 }

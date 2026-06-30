@@ -1,12 +1,12 @@
 // seed/index.ts
-import { prisma } from "./client"
-import * as fs from "fs"
-import { seedUserOrg } from "../scripts/seed.import"
-import { seedReferensi } from "./01-referensi"
-import { seedProgresCater } from "./02-progrescater"
-import { seedLapdatameter } from "./03-lapdatameter"
-import { seedPBPK } from "./04-pbpk"
-import { seedRNomor } from "./05-rnomor"
+import { prisma } from './client'
+import * as fs from 'fs'
+import { seedUserOrg } from '../scripts/seed.import'
+import { seedReferensi } from './01-referensi'
+import { seedProgresCater } from './02-progrescater'
+import { seedLapdatameter } from './03-lapdatameter'
+import { seedPBPK } from './04-pbpk'
+import { seedRNomor } from './05-rnomor'
 
 // ─────────────────────────────────────────────────────────────
 // TIPE & KONFIGURASI FASE
@@ -20,38 +20,38 @@ interface SeedPhase {
 }
 
 const SEED_CONFIG: Record<string, SeedPhase> = {
-  "00": {
-    label: "Struktur Organisasi & Admin",
+  '00': {
+    label: 'Struktur Organisasi & Admin',
     fn: async () => {
       await seedUserOrg()
     },
   },
-  "01": {
-    label: "Referensi",
+  '01': {
+    label: 'Referensi',
     fn: () => seedReferensi(),
   },
-  "02": {
-    label: "ProgresCater",
-    fileEnv: "PROGRESCATER_CSV",
-    default: "./data/ProgresCater-PW5.csv",
+  '02': {
+    label: 'ProgresCater',
+    fileEnv: 'PROGRESCATER_CSV',
+    default: './data/ProgresCater-PW5.csv',
     fn: (path) => seedProgresCater(path!),
   },
-  "03": {
-    label: "Lapdatameter",
-    fileEnv: "LAPDATAMETER_CSV",
-    default: "./data/lapdatametertes.csv",
+  '03': {
+    label: 'Lapdatameter',
+    fileEnv: 'LAPDATAMETER_CSV',
+    default: './data/lapdatametertes.csv',
     fn: (path) => seedLapdatameter(path!),
   },
-  "04": {
-    label: "PBPK",
-    fileEnv: "PBPK_CSV",
-    default: "./data/PBPK202605-PW5.csv",
+  '04': {
+    label: 'PBPK',
+    fileEnv: 'PBPK_CSV',
+    default: './data/PBPK.csv',
     fn: (path) => seedPBPK(path!),
   },
-  "05": {
-    label: "R-Nomor",
-    fileEnv: "RNOMOR_CSV",
-    default: "./data/r-nomor.csv",
+  '05': {
+    label: 'R-Nomor',
+    fileEnv: 'RNOMOR_CSV',
+    default: './data/r-nomor.csv',
     fn: (path) => seedRNomor(path!),
   },
 }
@@ -89,12 +89,12 @@ async function main() {
     }
   }
 
-  console.log("\n🎉 Semua proses seeding selesai!\n")
+  console.log('\n🎉 Semua proses seeding selesai!\n')
 }
 
 main()
   .catch((e) => {
-    console.error("Fatal error:", e)
+    console.error('Fatal error:', e)
     process.exit(1)
   })
   .finally(async () => {

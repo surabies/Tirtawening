@@ -67,24 +67,6 @@ function staffAccess(subBagianKode: string): NavAccess {
 }
 
 /**
- * Akses untuk beberapa sub-bagian sekaligus di divisi PELAYANAN.
- * Gunakan saat satu menu perlu diakses oleh lebih dari satu sub-bagian.
- *
- * @param subBagianKodes - Array kode sub-bagian
- *
- * @example
- * // Menu yang bisa diakses CATER dan LANG sekaligus
- * access: multiStaffAccess(['SUB-PW5-CATER', 'SUB-PW5-LANG'])
- */
-function multiStaffAccess(subBagianKodes: string[]): NavAccess {
-  return {
-    roles: INTERNAL_ROLES,
-    divisi: 'PELAYANAN',
-    subBagianAny: subBagianKodes, // ← perlu tambah field ini di NavAccess type
-  }
-}
-
-/**
  * Akses divisi PELAYANAN untuk semua role yang diizinkan,
  * tanpa restriksi sub-bagian. Cocok untuk menu lintas sub-bagian.
  */
@@ -114,19 +96,19 @@ export const navPelayanan: NavGroup[] = [
     items: [
       {
         title: 'Dashboard',
-        url: '/dashboard/pelayanan',
+        url: '/overview/',
         icon: 'dashboard',
         access: pelayananAccess(INTERNAL_ROLES),
       },
       {
         title: 'Rekap Wilayah',
-        url: '/dashboard/pelayanan/rekap',
+        url: '#', // TODO: create route /rekap/
         icon: 'chart-bar',
         access: pelayananAccess(MANAGEMENT),
       },
       {
         title: 'Peta Spasial',
-        url: '/map',
+        url: '/map/',
         icon: 'peta',
         access: pelayananAccess(INTERNAL_ROLES),
       },
@@ -145,22 +127,22 @@ export const navPelayanan: NavGroup[] = [
         items: [
           {
             title: 'Daftar Pelanggan',
-            url: '/dashboard/pelayanan/tagihan',
+            url: '/tagihan/',
             shortcut: ['p', 'l'],
           },
           {
             title: 'Tambah Pelanggan',
-            url: '/dashboard/pelayanan/pelanggan/baru',
+            url: '#', // TODO: create route /pelanggan/baru/
             access: pelayananAccess(MANAGER_UP),
           },
           {
             title: 'Cari Pelanggan',
-            url: '/dashboard/pelayanan/pelanggan/cari',
+            url: '#', // TODO: create route /pelanggan/cari/
             shortcut: ['p', 'c'],
           },
           {
             title: 'Data Meter',
-            url: '/dashboard/pelayanan/meter',
+            url: '#', // TODO: create route /meter/
             access: pelayananAccess(CAN_VALIDATE),
           },
         ],
@@ -173,16 +155,16 @@ export const navPelayanan: NavGroup[] = [
         items: [
           {
             title: 'Pengajuan PB/PK',
-            url: '/dashboard/pelayanan/pbpk',
+            url: '#', // TODO: create route /pbpk/
             shortcut: ['p', 'b'],
           },
           {
             title: 'Riwayat Mutasi',
-            url: '/dashboard/pelayanan/pbpk/riwayat',
+            url: '#', // TODO: create route /pbpk/riwayat/
           },
           {
             title: 'Validasi PB/PK',
-            url: '/dashboard/pelayanan/pbpk/validasi',
+            url: '#', // TODO: create route /pbpk/validasi/
             access: pelayananAccess(CAN_VALIDATE),
           },
         ],
@@ -195,19 +177,19 @@ export const navPelayanan: NavGroup[] = [
         items: [
           {
             title: 'Daftar Pemutusan',
-            url: '/dashboard/pelayanan/pemutusan',
+            url: '#', // TODO: create route /pemutusan/
           },
           {
             title: 'TSM (Tutup Sementara)',
-            url: '/dashboard/pelayanan/pemutusan/tsm',
+            url: '#', // TODO: create route /pemutusan/tsm/
           },
           {
             title: 'SPT (Surat Perintah Tutup)',
-            url: '/dashboard/pelayanan/pemutusan/spt',
+            url: '#', // TODO: create route /pemutusan/spt/
           },
           {
             title: 'Riwayat Pemutusan',
-            url: '/dashboard/pelayanan/pemutusan/riwayat',
+            url: '#', // TODO: create route /pemutusan/riwayat/
           },
         ],
       },
@@ -226,25 +208,25 @@ export const navPelayanan: NavGroup[] = [
         items: [
           {
             title: 'Input Stand Meter',
-            url: '/dashboard/cater/input-stand-meter',
+            url: '#', // TODO: create route /pencatatan/input/
             shortcut: ['c', 'i'],
           },
           {
             title: 'Laporan Hari Ini',
-            url: '/laporan-harian',
+            url: '/laporan-harian/',
           },
           {
             title: 'Verifikasi Laporan',
-            url: '/dashboard/cater/verifikasi-laporan',
+            url: '#', // TODO: create route /pencatatan/verifikasi/
             access: pelayananAccess(CAN_VALIDATE),
           },
           {
             title: 'Riwayat Pembacaan',
-            url: '/dashboard/cater/riwayat-pembacaan',
+            url: '#', // TODO: create route /pencatatan/riwayat/
           },
           {
             title: 'Anomali Pemakaian',
-            url: '/dashboard/cater/anomali-pemakaian',
+            url: '#', // TODO: create route /pencatatan/anomali/
             access: pelayananAccess(CAN_VALIDATE),
           },
         ],
@@ -262,16 +244,16 @@ export const navPelayanan: NavGroup[] = [
           },
           {
             title: 'Verifikasi Foto',
-            url: '/dashboard/cater/verifikasi-poto',
+            url: '#', // TODO: create route /laporan-mandiri/verifikasi/
             access: pelayananAccess(CAN_VALIDATE),
           },
           {
             title: 'Riwayat Laporan',
-            url: '/dashboard/cater/riwayat-laporan',
+            url: '#', // TODO: create route /laporan-mandiri/riwayat/
           },
           {
             title: 'Monitoring Lapor Meter',
-            url: '/dashboard/cater/monitoring-lapor-meter',
+            url: '#', // TODO: create route /laporan-mandiri/monitoring/
           },
         ],
       },
@@ -283,16 +265,16 @@ export const navPelayanan: NavGroup[] = [
         items: [
           {
             title: 'Proses Closing',
-            url: '/dashboard/cater/closing',
+            url: '#', // TODO: create route /_dashboard/closing
             shortcut: ['c', 'b'],
           },
           {
             title: 'Import ProgresCater',
-            url: '/dashboard/cater/import',
+            url: '#', // TODO: create route /_dashboard/closing/import
           },
           {
             title: 'Histori Closing',
-            url: '/dashboard/cater/histori',
+            url: '#', // TODO: create route /_dashboard/closing/history
           },
         ],
       },
@@ -312,20 +294,20 @@ export const navPelayanan: NavGroup[] = [
       },
       {
         title: 'Tagihan Jatuh Tempo',
-        url: '/dashboard/pelayanan/tagihan/jatuh-tempo',
+        url: '#', // TODO: create route /tagihan/jatuh-tempo/
         icon: 'receipt',
         shortcut: ['t', 'j'],
         access: staffAccess(LANG),
       },
       {
         title: 'Tunggakan',
-        url: '/dashboard/pelayanan/tagihan/tunggakan',
+        url: '#', // TODO: create route /tagihan/tunggakan/
         icon: 'receipt',
         access: staffAccess(LANG),
       },
       {
         title: 'Validasi Pembayaran',
-        url: '/dashboard/pelayanan/tagihan/validasi',
+        url: '#', // TODO: create route /tagihan/validasi/
         icon: 'receipt',
         access: pelayananAccess(CAN_VALIDATE),
       },
@@ -341,26 +323,26 @@ export const navPelayanan: NavGroup[] = [
     items: [
       {
         title: 'Dashboard NRW',
-        url: '/dashboard/pelayanan/nrw',
+        url: '#', // TODO: create route /nrw/
         icon: 'droplet',
         shortcut: ['n', 'r'],
         access: staffAccess(NRW),
       },
       {
         title: 'Zona & DMA',
-        url: '/dashboard/pelayanan/nrw/zona',
+        url: '#', // TODO: create route /nrw/zona/
         icon: 'droplet',
         access: staffAccess(NRW),
       },
       {
         title: 'Analisis Kehilangan Air',
-        url: '/dashboard/pelayanan/nrw/analisis',
+        url: '#', // TODO: create route /nrw/analisis/
         icon: 'droplet',
         access: staffAccess(NRW),
       },
       {
         title: 'Wilayah & Seksi Cater',
-        url: '/dashboard/pelayanan/nrw/wilayah',
+        url: '#', // TODO: create route /nrw/wilayah/
         icon: 'droplet',
         access: pelayananAccess(MANAGER_UP),
       },
@@ -373,26 +355,26 @@ export const navPelayanan: NavGroup[] = [
     items: [
       {
         title: 'Rekap Pembacaan',
-        url: '/dashboard/pelayanan/laporan/pembacaan',
+        url: '#', // TODO: create route /laporan/pembacaan/
         icon: 'fileText',
         shortcut: ['l', 'p'],
         access: pelayananAccess(CAN_VALIDATE),
       },
       {
         title: 'Rekap Tagihan',
-        url: '/dashboard/pelayanan/laporan/tagihan',
+        url: '#', // TODO: create route /laporan/tagihan/
         icon: 'receiptText',
         access: pelayananAccess(CAN_VALIDATE),
       },
       {
         title: 'Laporan Petugas',
-        url: '/dashboard/pelayanan/laporan/petugas',
+        url: '#', // TODO: create route /laporan/petugas/
         icon: 'userCog',
         access: pelayananAccess(MANAGER_UP),
       },
       {
         title: 'Ekspor CSV',
-        url: '/dashboard/pelayanan/laporan/ekspor',
+        url: '#', // TODO: create route /laporan/ekspor/
         icon: 'fileDown',
         access: pelayananAccess(MANAGER_UP),
       },
@@ -411,23 +393,23 @@ export const navPelayanan: NavGroup[] = [
         items: [
           {
             title: 'Golongan Tarif',
-            url: '/dashboard/pelayanan/referensi/tarif',
+            url: '#', // TODO: create route /referensi/tarif/
           },
           {
             title: 'Blok Tarif',
-            url: '/dashboard/pelayanan/referensi/tarif/blok',
+            url: '#', // TODO: create route /referensi/tarif/blok/
           },
           {
             title: 'Wilayah PDAM',
-            url: '/dashboard/pelayanan/referensi/wilayah',
+            url: '#', // TODO: create route /referensi/wilayah/
           },
           {
             title: 'Kecamatan & Kelurahan',
-            url: '/dashboard/pelayanan/referensi/kecamatan',
+            url: '#', // TODO: create route /referensi/kecamatan/
           },
           {
             title: 'Daftar Petugas',
-            url: '/dashboard/pelayanan/referensi/petugas',
+            url: '#', // TODO: create route /referensi/petugas/
           },
         ],
       },
@@ -446,17 +428,17 @@ export const navPelayanan: NavGroup[] = [
         items: [
           {
             title: 'Audit Log',
-            url: '/dashboard/pelayanan/admin/audit',
+            url: '#', // TODO: create route /admin/audit/
             access: pelayananAccess(MANAGEMENT),
           },
           {
             title: 'Konfigurasi Sistem',
-            url: '/dashboard/pelayanan/admin/konfigurasi',
+            url: '#', // TODO: create route /admin/konfigurasi/
             access: { roles: SUPER_ONLY },
           },
           {
             title: 'Manajemen User',
-            url: '/dashboard/users',
+            url: '#', // TODO: create route /admin/users/
             access: pelayananAccess(MANAGEMENT),
           },
         ],

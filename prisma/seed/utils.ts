@@ -14,8 +14,57 @@ import {
 // ─── CSV PARSER ──────────────────────────────────────────────────────────────
 
 /**
+ * Parse satu baris CSV dengan separator `;`, quote-aware (RFC 4180).
+ *
+ * PENTING: tidak bisa pakai `line.split(';')` polos karena beberapa field
+ * (terutama Nama dan Alamat) mengandung karakter `;` DI DALAM tanda kutip,
+ * contoh nyata dari data lapdatameter:
+ *   "MULYANA SOEMANTRI; SE"
+ *   "STATSION SLT NO.24; 4/2 NO.24"
+ *   "JL;KECUBUNG NO.18 B"
+ * Naive split akan memecah field ini jadi 2 kolom, sehingga SEMUA kolom
+ * setelahnya (termasuk Periode) bergeser satu posisi ke kiri. Ini terbukti
+ * menyebabkan ~440 baris di file lapdatameter salah masuk periode (mis.
+ * value Periode malah berisi teks alamat, atau angka pendek hasil parseInt
+ * dari teks yang diawali angka seperti "4/2 NO.24" → 4).
+ */
+function parseCsvLine(line: string, delimiter: string): string[] {
+  const result: string[] = []
+  let cur = ''
+  let inQuotes = false
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        // escaped quote ("" di dalam field ber-quote) → satu tanda kutip literal
+        cur += '"'
+        i++
+      } else {
+        inQuotes = !inQuotes
+      }
+    } else if (ch === delimiter && !inQuotes) {
+      result.push(cur)
+      cur = ''
+    } else {
+      cur += ch
+    }
+  }
+  result.push(cur)
+  return result
+}
+
+/**
  * Baca file CSV dengan separator `;` dan kembalikan array of objects.
  * Otomatis strip whitespace dan tab dari setiap value.
+ *
+ * Quote-aware: field ber-quote yang mengandung `;` di dalamnya TIDAK akan
+ * memecah kolom (lihat parseCsvLine di atas).
+ *
+ * Validasi: setiap baris yang jumlah kolomnya tidak cocok dengan header
+ * akan di-warn ke console (bukan langsung throw, supaya seed tetap bisa
+ * jalan) sehingga anomali ketahuan saat seeding, bukan setelah hitung
+ * jumlah data meleset.
  */
 export function readCsv(filePath: string): Record<string, string>[] {
   const abs = path.resolve(filePath)
@@ -24,16 +73,40 @@ export function readCsv(filePath: string): Record<string, string>[] {
     .trim()
     .split('\n')
     .filter((l) => l.trim() !== '')
-  const headers = lines[0].split(';').map((h) => h.trim().replace(/^"|"$/g, ''))
+  const headers = parseCsvLine(lines[0], ';').map((h) =>
+    h.trim().replace(/^"|"$/g, ''),
+  )
 
-  return lines.slice(1).map((line: string) => {
-    const vals = line.split(';')
+  let mismatchCount = 0
+
+  const rows = lines.slice(1).map((line: string, idx: number) => {
+    const vals = parseCsvLine(line, ';')
+    if (vals.length !== headers.length) {
+      mismatchCount++
+      if (mismatchCount <= 10) {
+        console.warn(
+          `  [readCsv] WARNING baris ${idx + 2}: jumlah kolom ${vals.length}, ` +
+            `harusnya ${headers.length}. Kemungkinan ada quote tidak balance ` +
+            `atau field rusak. Baris: ${line.slice(0, 150)}...`,
+        )
+      }
+    }
+
     const obj: Record<string, string> = {}
     headers.forEach((h: string, i: number) => {
       obj[h] = (vals[i] ?? '').trim().replace(/^\t/, '').replace(/^"|"$/g, '')
     })
     return obj
   })
+
+  if (mismatchCount > 0) {
+    console.warn(
+      `  [readCsv] Total ${mismatchCount} baris dengan jumlah kolom tidak cocok ` +
+        `(dari ${lines.length - 1} baris). Periksa data ini secara manual.`,
+    )
+  }
+
+  return rows
 }
 
 // ─── DATE PARSERS ─────────────────────────────────────────────────────────────

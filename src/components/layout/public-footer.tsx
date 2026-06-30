@@ -10,10 +10,11 @@ export function PublicFooter() {
         <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-3">
           {/* Brand */}
           <div>
-            <p className="font-semibold tracking-tight">Tirtawening</p>
+            <p className="font-semibold tracking-tight">
+              PERUMDA Tirtawening Kota Bandung
+            </p>
             <p className="mt-2 max-w-xs text-sm text-muted-foreground">
-              PERUMDA Tirtawening Kota Bandung — melayani kebutuhan air bersih
-              warga Bandung.
+              Siap melayani kebutuhan air bersih warga kota Bandung.
             </p>
           </div>
 

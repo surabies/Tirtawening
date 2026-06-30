@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils'
 import { useNavbar } from './navbar-context'
 import { layout } from '@/lib/layout'
 import { ChevronRight, Home } from 'lucide-react'
+import { SidebarTrigger } from '@/components/ui/sidebar'
+import { Separator } from '@/components/ui/separator'
 
 // ── Breadcrumb helper ─────────────────────────────────────────────────────────
 // Mengubah path "/dashboard/pencatatan-meter/laporan-mandiri"
@@ -70,9 +72,8 @@ export function Navbar() {
     >
       {/* ── Baris utama ── */}
       <div className={cn('flex flex-1 items-center gap-2', layout.pagePadding)}>
-        {/* Sidebar trigger (mobile / collapsed) */}
-        {/* <SidebarTrigger className="-ml-1 shrink-0" /> */}
-        {/* <Separator orientation="vertical" className="h-4 shrink-0" /> */}
+        {/* Sidebar trigger button */}
+
         {/* Breadcrumb */}
         <nav
           aria-label="Breadcrumb"
@@ -80,7 +81,7 @@ export function Navbar() {
         >
           {/* Home icon */}
           <Link
-            to="/overview"
+            to="/"
             className="text-muted-foreground hover:text-foreground shrink-0 transition-colors"
             aria-label="Dashboard"
           >
