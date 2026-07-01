@@ -20,8 +20,4 @@ function PencatatKpiPage() {
       <PencatatKpiGrid />
     </PageContainer>
   )
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 8b696d79f286150c672cdb14837590f9f63f88d6
