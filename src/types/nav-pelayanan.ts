@@ -373,6 +373,13 @@ export const navPelayanan: NavGroup[] = [
         access: pelayananAccess(MANAGER_UP),
       },
       {
+        title: 'Laporan DRD',
+        url: '/drd', // TODO: create route /laporan/pembacaan/
+        icon: 'fileText',
+        shortcut: ['l', 'p'],
+        access: pelayananAccess(CAN_VALIDATE),
+      },
+      {
         title: 'Ekspor CSV',
         url: '#', // TODO: create route /laporan/ekspor/
         icon: 'fileDown',
