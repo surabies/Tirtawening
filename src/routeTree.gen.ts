@@ -25,7 +25,9 @@ import { Route as DashboardOverviewIndexRouteImport } from './routes/_dashboard/
 import { Route as DashboardMapIndexRouteImport } from './routes/_dashboard/map/index'
 import { Route as DashboardLaporanMandiriIndexRouteImport } from './routes/_dashboard/laporan-mandiri/index'
 import { Route as DashboardLaporanHarianIndexRouteImport } from './routes/_dashboard/laporan-harian/index'
+import { Route as DashboardKpiPencatatIndexRouteImport } from './routes/_dashboard/kpi-pencatat/index'
 import { Route as DashboardDrdIndexRouteImport } from './routes/_dashboard/drd/index'
+import { Route as DashboardClosingIndexRouteImport } from './routes/_dashboard/closing/index'
 import { Route as AuthTwoFactorIndexRouteImport } from './routes/_auth/two-factor/index'
 import { Route as AuthSignUpIndexRouteImport } from './routes/_auth/sign-up/index'
 import { Route as AuthResetPasswordIndexRouteImport } from './routes/_auth/reset-password/index'
@@ -33,6 +35,8 @@ import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
 import { Route as AuthForgotPasswordIndexRouteImport } from './routes/_auth/forgot-password/index'
 import { Route as ApiTrpcSplatRouteImport } from './routes/api/trpc/$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as DashboardClosingImportIndexRouteImport } from './routes/_dashboard/closing/import/index'
+import { Route as DashboardClosingHistoryIndexRouteImport } from './routes/_dashboard/closing/history/index'
 
 const UnauthorizedRoute = UnauthorizedRouteImport.update({
   id: '/unauthorized',
@@ -114,9 +118,20 @@ const DashboardLaporanHarianIndexRoute =
     path: '/laporan-harian/',
     getParentRoute: () => DashboardRouteRoute,
   } as any)
+const DashboardKpiPencatatIndexRoute =
+  DashboardKpiPencatatIndexRouteImport.update({
+    id: '/kpi-pencatat/',
+    path: '/kpi-pencatat/',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
 const DashboardDrdIndexRoute = DashboardDrdIndexRouteImport.update({
   id: '/drd/',
   path: '/drd/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardClosingIndexRoute = DashboardClosingIndexRouteImport.update({
+  id: '/closing/',
+  path: '/closing/',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
 const AuthTwoFactorIndexRoute = AuthTwoFactorIndexRouteImport.update({
@@ -154,6 +169,18 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardClosingImportIndexRoute =
+  DashboardClosingImportIndexRouteImport.update({
+    id: '/closing/import/',
+    path: '/closing/import/',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
+const DashboardClosingHistoryIndexRoute =
+  DashboardClosingHistoryIndexRouteImport.update({
+    id: '/closing/history/',
+    path: '/closing/history/',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -166,7 +193,9 @@ export interface FileRoutesByFullPath {
   '/reset-password/': typeof AuthResetPasswordIndexRoute
   '/sign-up/': typeof AuthSignUpIndexRoute
   '/two-factor/': typeof AuthTwoFactorIndexRoute
+  '/closing/': typeof DashboardClosingIndexRoute
   '/drd/': typeof DashboardDrdIndexRoute
+  '/kpi-pencatat/': typeof DashboardKpiPencatatIndexRoute
   '/laporan-harian/': typeof DashboardLaporanHarianIndexRoute
   '/laporan-mandiri/': typeof DashboardLaporanMandiriIndexRoute
   '/map/': typeof DashboardMapIndexRoute
@@ -177,6 +206,8 @@ export interface FileRoutesByFullPath {
   '/cek-tagihan/': typeof PublicCekTagihanIndexRoute
   '/lapor-meter/': typeof PublicLaporMeterIndexRoute
   '/pengaduan/': typeof PublicPengaduanIndexRoute
+  '/closing/history/': typeof DashboardClosingHistoryIndexRoute
+  '/closing/import/': typeof DashboardClosingImportIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -189,7 +220,9 @@ export interface FileRoutesByTo {
   '/reset-password': typeof AuthResetPasswordIndexRoute
   '/sign-up': typeof AuthSignUpIndexRoute
   '/two-factor': typeof AuthTwoFactorIndexRoute
+  '/closing': typeof DashboardClosingIndexRoute
   '/drd': typeof DashboardDrdIndexRoute
+  '/kpi-pencatat': typeof DashboardKpiPencatatIndexRoute
   '/laporan-harian': typeof DashboardLaporanHarianIndexRoute
   '/laporan-mandiri': typeof DashboardLaporanMandiriIndexRoute
   '/map': typeof DashboardMapIndexRoute
@@ -200,6 +233,8 @@ export interface FileRoutesByTo {
   '/cek-tagihan': typeof PublicCekTagihanIndexRoute
   '/lapor-meter': typeof PublicLaporMeterIndexRoute
   '/pengaduan': typeof PublicPengaduanIndexRoute
+  '/closing/history': typeof DashboardClosingHistoryIndexRoute
+  '/closing/import': typeof DashboardClosingImportIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -216,7 +251,9 @@ export interface FileRoutesById {
   '/_auth/reset-password/': typeof AuthResetPasswordIndexRoute
   '/_auth/sign-up/': typeof AuthSignUpIndexRoute
   '/_auth/two-factor/': typeof AuthTwoFactorIndexRoute
+  '/_dashboard/closing/': typeof DashboardClosingIndexRoute
   '/_dashboard/drd/': typeof DashboardDrdIndexRoute
+  '/_dashboard/kpi-pencatat/': typeof DashboardKpiPencatatIndexRoute
   '/_dashboard/laporan-harian/': typeof DashboardLaporanHarianIndexRoute
   '/_dashboard/laporan-mandiri/': typeof DashboardLaporanMandiriIndexRoute
   '/_dashboard/map/': typeof DashboardMapIndexRoute
@@ -227,6 +264,8 @@ export interface FileRoutesById {
   '/_public/cek-tagihan/': typeof PublicCekTagihanIndexRoute
   '/_public/lapor-meter/': typeof PublicLaporMeterIndexRoute
   '/_public/pengaduan/': typeof PublicPengaduanIndexRoute
+  '/_dashboard/closing/history/': typeof DashboardClosingHistoryIndexRoute
+  '/_dashboard/closing/import/': typeof DashboardClosingImportIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -241,7 +280,9 @@ export interface FileRouteTypes {
     | '/reset-password/'
     | '/sign-up/'
     | '/two-factor/'
+    | '/closing/'
     | '/drd/'
+    | '/kpi-pencatat/'
     | '/laporan-harian/'
     | '/laporan-mandiri/'
     | '/map/'
@@ -252,6 +293,8 @@ export interface FileRouteTypes {
     | '/cek-tagihan/'
     | '/lapor-meter/'
     | '/pengaduan/'
+    | '/closing/history/'
+    | '/closing/import/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -264,7 +307,9 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sign-up'
     | '/two-factor'
+    | '/closing'
     | '/drd'
+    | '/kpi-pencatat'
     | '/laporan-harian'
     | '/laporan-mandiri'
     | '/map'
@@ -275,6 +320,8 @@ export interface FileRouteTypes {
     | '/cek-tagihan'
     | '/lapor-meter'
     | '/pengaduan'
+    | '/closing/history'
+    | '/closing/import'
   id:
     | '__root__'
     | '/'
@@ -290,7 +337,9 @@ export interface FileRouteTypes {
     | '/_auth/reset-password/'
     | '/_auth/sign-up/'
     | '/_auth/two-factor/'
+    | '/_dashboard/closing/'
     | '/_dashboard/drd/'
+    | '/_dashboard/kpi-pencatat/'
     | '/_dashboard/laporan-harian/'
     | '/_dashboard/laporan-mandiri/'
     | '/_dashboard/map/'
@@ -301,6 +350,8 @@ export interface FileRouteTypes {
     | '/_public/cek-tagihan/'
     | '/_public/lapor-meter/'
     | '/_public/pengaduan/'
+    | '/_dashboard/closing/history/'
+    | '/_dashboard/closing/import/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -428,11 +479,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLaporanHarianIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/_dashboard/kpi-pencatat/': {
+      id: '/_dashboard/kpi-pencatat/'
+      path: '/kpi-pencatat'
+      fullPath: '/kpi-pencatat/'
+      preLoaderRoute: typeof DashboardKpiPencatatIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/_dashboard/drd/': {
       id: '/_dashboard/drd/'
       path: '/drd'
       fullPath: '/drd/'
       preLoaderRoute: typeof DashboardDrdIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/_dashboard/closing/': {
+      id: '/_dashboard/closing/'
+      path: '/closing'
+      fullPath: '/closing/'
+      preLoaderRoute: typeof DashboardClosingIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
     '/_auth/two-factor/': {
@@ -484,6 +549,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_dashboard/closing/import/': {
+      id: '/_dashboard/closing/import/'
+      path: '/closing/import'
+      fullPath: '/closing/import/'
+      preLoaderRoute: typeof DashboardClosingImportIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/_dashboard/closing/history/': {
+      id: '/_dashboard/closing/history/'
+      path: '/closing/history'
+      fullPath: '/closing/history/'
+      preLoaderRoute: typeof DashboardClosingHistoryIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
   }
 }
 
@@ -508,7 +587,9 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
 )
 
 interface DashboardRouteRouteChildren {
+  DashboardClosingIndexRoute: typeof DashboardClosingIndexRoute
   DashboardDrdIndexRoute: typeof DashboardDrdIndexRoute
+  DashboardKpiPencatatIndexRoute: typeof DashboardKpiPencatatIndexRoute
   DashboardLaporanHarianIndexRoute: typeof DashboardLaporanHarianIndexRoute
   DashboardLaporanMandiriIndexRoute: typeof DashboardLaporanMandiriIndexRoute
   DashboardMapIndexRoute: typeof DashboardMapIndexRoute
@@ -516,10 +597,14 @@ interface DashboardRouteRouteChildren {
   DashboardPelangganIndexRoute: typeof DashboardPelangganIndexRoute
   DashboardPencatatanIndexRoute: typeof DashboardPencatatanIndexRoute
   DashboardTagihanIndexRoute: typeof DashboardTagihanIndexRoute
+  DashboardClosingHistoryIndexRoute: typeof DashboardClosingHistoryIndexRoute
+  DashboardClosingImportIndexRoute: typeof DashboardClosingImportIndexRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardClosingIndexRoute: DashboardClosingIndexRoute,
   DashboardDrdIndexRoute: DashboardDrdIndexRoute,
+  DashboardKpiPencatatIndexRoute: DashboardKpiPencatatIndexRoute,
   DashboardLaporanHarianIndexRoute: DashboardLaporanHarianIndexRoute,
   DashboardLaporanMandiriIndexRoute: DashboardLaporanMandiriIndexRoute,
   DashboardMapIndexRoute: DashboardMapIndexRoute,
@@ -527,6 +612,8 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardPelangganIndexRoute: DashboardPelangganIndexRoute,
   DashboardPencatatanIndexRoute: DashboardPencatatanIndexRoute,
   DashboardTagihanIndexRoute: DashboardTagihanIndexRoute,
+  DashboardClosingHistoryIndexRoute: DashboardClosingHistoryIndexRoute,
+  DashboardClosingImportIndexRoute: DashboardClosingImportIndexRoute,
 }
 
 const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(

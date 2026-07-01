@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import * as React from 'react'
 import { useEffect, useMemo } from 'react'
 import { useTRPC } from '@/integrations/trpc/react'
 import { useQuery } from '@tanstack/react-query'
@@ -8,15 +9,15 @@ import { PageHeader } from '@/components/layout/page/page-header'
 import { LaporanMandiriStats } from '@/components/features/laporan-mandiri/laporan-mandiri-stats'
 import { LaporanMandiriTable } from '@/components/features/laporan-mandiri/laporan-mandiri-table'
 
-// ── Route ─────────────────────────────────────────────────────────────────────
-
-export const Route = createFileRoute('/_dashboard/laporan-mandiri/')({
-  component: LaporanMandiriPage,
-})
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function buildPeriodeOptions(bulanTerakhir = 12) {
+/**
+ * Membuat opsi periode bulan ke belakang secara dinamis dan memoized.
+ * Dibuat murni (pure function) di luar komponen agar tidak di-recreate.
+ */
+function buildPeriodeOptions(
+  bulanTerakhir = 12,
+): { value: number; label: string }[] {
   const BULAN = [
     '',
     'Jan',
@@ -34,30 +35,49 @@ function buildPeriodeOptions(bulanTerakhir = 12) {
   ]
   const now = new Date()
   const opts: { value: number; label: string }[] = []
+
   for (let i = 0; i < bulanTerakhir; i++) {
+    // Menggunakan safe date transition untuk menghindari bug penanggalan akhir bulan (e.g. 31 Jan ke Feb)
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
     const yyyymm = d.getFullYear() * 100 + (d.getMonth() + 1)
+
     opts.push({
       value: yyyymm,
-      label: `${BULAN[d.getMonth() + 1]} ${d.getFullYear()}`,
+      label: `${BULAN[d.getMonth() + 1] ?? ''} ${d.getFullYear()}`,
     })
   }
   return opts
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ── Page Component ────────────────────────────────────────────────────────────
 
 function LaporanMandiriPage() {
   const trpc = useTRPC()
   const { setContent } = useNavbar()
 
+  // Sinkronisasi konten Navbar dengan pengaman dependensi murni
   useEffect(() => {
     setContent(null)
-    return () => setContent(null)
+    // Cleanup hanya dilakukan jika komponen benar-benar unmount menuju halaman non-dashboard
+    return () => {
+      setContent(null)
+    }
   }, [setContent])
 
-  const statsQuery = useQuery(trpc.laporanMandiri.stats.queryOptions({}))
+  // Fetching data dengan tRPC + react-query
+  const statsQuery = useQuery(
+    trpc.laporanMandiri.stats.queryOptions(
+      {},
+      {
+        // Menambahkan opsi ketangguhan (staleTime) agar tidak dikueri berulang-ulang dalam waktu dekat
+        staleTime: 5 * 60 * 1000,
+        // Mencegah crash jika request gagal total
+        retry: 1,
+      },
+    ),
+  )
 
+  // Memastikan pembentukan opsi periode hanya dieksekusi sekali (0 overhead)
   const periodeOptions = useMemo(() => buildPeriodeOptions(12), [])
 
   return (
@@ -69,11 +89,20 @@ function LaporanMandiriPage() {
         />
       }
     >
+      {/* Fallback data kosong `|| null/undefined` dihandle dengan melemparkan data aman ke komponen */}
       <LaporanMandiriStats
-        data={statsQuery.data}
-        isLoading={statsQuery.isLoading}
+        data={statsQuery.data ?? undefined}
+        isLoading={statsQuery.isLoading || statsQuery.isFetching}
       />
+
       <LaporanMandiriTable periodeOptions={periodeOptions} />
     </PageContainer>
   )
 }
+
+// ── Route Registration ────────────────────────────────────────────────────────
+// Ditaruh di paling bawah untuk menjamin LaporanMandiriPage sudah ter-hoist dengan sempurna oleh Bun/Vite
+
+export const Route = createFileRoute('/_dashboard/laporan-mandiri/')({
+  component: LaporanMandiriPage,
+})

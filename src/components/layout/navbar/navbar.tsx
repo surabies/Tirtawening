@@ -11,8 +11,6 @@ import { cn } from '@/lib/utils'
 import { useNavbar } from './navbar-context'
 import { layout } from '@/lib/layout'
 import { ChevronRight, Home } from 'lucide-react'
-import { SidebarTrigger } from '@/components/ui/sidebar'
-import { Separator } from '@/components/ui/separator'
 
 // ── Breadcrumb helper ─────────────────────────────────────────────────────────
 // Mengubah path "/dashboard/pencatatan-meter/laporan-mandiri"

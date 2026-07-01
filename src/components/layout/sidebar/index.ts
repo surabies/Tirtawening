@@ -4,7 +4,7 @@
  */
 
 // Main components
-export { Sidebar } from './sidebar'
+export { AppSidebar } from './sidebar'
 export { default as SidebarMenu } from './sidebar-menu'
 
 // Sub-components (opsional untuk direct import)

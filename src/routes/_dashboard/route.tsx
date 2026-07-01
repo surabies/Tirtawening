@@ -35,8 +35,8 @@
 // div h-screen/flex-col tambahan di luar itu.
 
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
-import { Sidebar } from '@/components/layout/sidebar/sidebar'
 import { Navbar, NavbarProvider } from '@/components/layout/navbar'
+import { AppSidebar } from '#/components/layout/sidebar/sidebar'
 
 const ALLOWED_ROLES = [
   'SUPER_ADMIN',
@@ -107,12 +107,12 @@ function DashboardLayout() {
           area scroll konten di bawah memakai <div>, bukan <main> kedua —
           menghindari nested <main> yang invalid sekaligus tetap
           memanfaatkan flex-1/flex-col yang sudah disediakan SidebarInset. */}
-      <Sidebar>
+      <AppSidebar>
         <Navbar />
         <div className="flex-1 overflow-auto">
           <Outlet />
         </div>
-      </Sidebar>
+      </AppSidebar>
     </NavbarProvider>
   )
 }

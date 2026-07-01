@@ -6,7 +6,7 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent,
   SidebarMenu as SidebarMenuRoot,
-} from '@/components/ui/sidebar'
+} from '@/components/animate-ui/components/radix/sidebar'
 import { NavLeaf } from './nav-leaf'
 import { NavCollapsible } from './nav-collapsible'
 

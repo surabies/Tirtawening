@@ -1,6 +1,9 @@
 import { Link } from '@tanstack/react-router'
 import type { NavItem } from '@/types'
-import { SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar'
+import {
+  SidebarMenuItem,
+  SidebarMenuButton,
+} from '@/components/animate-ui/components/radix/sidebar'
 import { NavIcon } from './nav-icon'
 import {
   SIDEBAR_ITEM_CLASS,

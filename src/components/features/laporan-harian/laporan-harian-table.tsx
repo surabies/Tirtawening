@@ -67,6 +67,129 @@ function formatAngka(n: number): string {
   return n.toLocaleString('id-ID')
 }
 
+// ── KPI Calculator ────────────────────────────────────────────────────────────
+
+type KpiData = {
+  totalCatat: number
+  totalTarget: number
+  persenCapai: number
+  totalHariKerja: number
+  hariKerjaTerlewat: number
+  hariKerjaSisa: number
+  rataRataHarian: number
+  proyeksiAkhirBulan: number
+  isOnTrack: boolean
+  isPeriodeBerjalan: boolean
+}
+
+type MatrixData = {
+  periode: number
+  jumlahHari: number
+  hariInfo: {
+    tanggal: number
+    isHariKerja: boolean
+    isWeekend: boolean
+    liburNasional: string | null
+  }[]
+  items: {
+    pencatatId: string
+    namaPetugas: string
+    harian: number[]
+    totalCatat: number
+    target: number
+    selisih: number
+  }[]
+  total: {
+    harian: number[]
+    totalCatat: number
+    target: number
+    selisih: number
+  }
+}
+
+type PaceStatus = 'on-track' | 'at-risk' | 'behind' | 'selesai'
+
+function hitungKpi(data: MatrixData, periode: number): KpiData {
+  const now = new Date()
+  const year = Math.floor(periode / 100)
+  const month = periode % 100
+
+  const isPeriodeBerjalan =
+    now.getFullYear() === year && now.getMonth() + 1 === month
+
+  let totalHariKerja = 0
+  let hariKerjaTerlewat = 0
+  const hariIni = now.getDate()
+
+  for (const h of data.hariInfo) {
+    if (h.isHariKerja) {
+      totalHariKerja++
+      if (!isPeriodeBerjalan || h.tanggal <= hariIni) {
+        hariKerjaTerlewat++
+      }
+    }
+  }
+
+  const hariKerjaSisa = totalHariKerja - hariKerjaTerlewat
+  const totalCatat = data.total.totalCatat
+  const totalTarget = data.total.target
+  const rataRataHarian =
+    hariKerjaTerlewat > 0 ? totalCatat / hariKerjaTerlewat : 0
+  const proyeksiAkhirBulan = Math.round(
+    totalCatat + rataRataHarian * hariKerjaSisa,
+  )
+  const persenCapai =
+    totalTarget > 0 ? Math.min((totalCatat / totalTarget) * 100, 100) : 0
+  const isOnTrack = proyeksiAkhirBulan >= totalTarget * 0.98
+
+  return {
+    totalCatat,
+    totalTarget,
+    persenCapai,
+    totalHariKerja,
+    hariKerjaTerlewat,
+    hariKerjaSisa,
+    rataRataHarian,
+    proyeksiAkhirBulan,
+    isOnTrack,
+    isPeriodeBerjalan,
+  }
+}
+
+function hitungPacePertugas(
+  row: MatrixData['items'][number],
+  kpi: KpiData,
+): {
+  status: PaceStatus
+  persen: number
+  proyeksi: number
+  rataRata: number
+} {
+  const persen =
+    row.target > 0 ? Math.min((row.totalCatat / row.target) * 100, 100) : 0
+
+  if (row.target === 0 || row.totalCatat >= row.target) {
+    return {
+      status: 'selesai',
+      persen: 100,
+      proyeksi: row.totalCatat,
+      rataRata: 0,
+    }
+  }
+
+  const rataRata =
+    kpi.hariKerjaTerlewat > 0 ? row.totalCatat / kpi.hariKerjaTerlewat : 0
+  const proyeksi = Math.round(row.totalCatat + rataRata * kpi.hariKerjaSisa)
+
+  const rasioProyeksi = row.target > 0 ? proyeksi / row.target : 0
+  let status: PaceStatus
+  if (rasioProyeksi >= 0.98) status = 'on-track'
+  else if (rasioProyeksi >= 0.9) status = 'at-risk'
+  else status = 'behind'
+
+  return { status, persen, proyeksi, rataRata }
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function LaporanHarianMatrixTable() {
@@ -106,19 +229,29 @@ export function LaporanHarianMatrixTable() {
       </div>
 
       {isLoading ? (
-        <Skeleton className="h-96 w-full rounded-lg" />
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 rounded-lg" />
+            ))}
+          </div>
+          <Skeleton className="h-96 w-full rounded-lg" />
+        </div>
       ) : !data || data.items.length === 0 ? (
         <div className="flex h-32 items-center justify-center rounded-lg border border-border text-sm text-muted-foreground">
           Belum ada data pencatatan untuk periode {formatPeriodeLabel(periode)}.
         </div>
       ) : (
-        <MatrixTable data={data} periode={periode} />
+        <>
+          <SummaryCards data={data} periode={periode} />
+          <MatrixTable data={data} periode={periode} />
+        </>
       )}
     </div>
   )
 }
 
-// ── Legend kategori (biar yang lihat tabel tahu arti warnanya) ───────────────
+// ── Legend kategori ───────────────────────────────────────────────────────────
 
 function KategoriLegend() {
   return (
@@ -136,70 +269,104 @@ function KategoriLegend() {
   )
 }
 
-// ── Matrix table itself ──────────────────────────────────────────────────────
+// ── Summary Cards ─────────────────────────────────────────────────────────────
 
-type MatrixData = NonNullable<
-  ReturnType<
-    typeof useQuery<{
-      periode: number
-      jumlahHari: number
-      hariInfo: {
-        tanggal: number
-        isHariKerja: boolean
-        isWeekend: boolean
-        liburNasional: string | null
-      }[]
-      items: {
-        pencatatId: string
-        namaPetugas: string
-        harian: number[]
-        totalCatat: number
-        target: number
-        selisih: number
-      }[]
-      total: {
-        harian: number[]
-        totalCatat: number
-        target: number
-        selisih: number
-      }
-    }>
-  >['data']
->
+function SummaryCards({
+  data,
+  periode,
+}: {
+  data: MatrixData
+  periode: number
+}) {
+  const kpi = hitungKpi(data, periode)
 
-function MatrixTable({ data, periode }: { data: MatrixData; periode: number }) {
-  // Lebar kolom sticky dikunci PASTI (bukan cuma min-width) supaya offset
-  // `left` kolom kedua selalu akurat di semua ukuran layar/zoom. Kalau cuma
-  // pakai min-width, browser boleh melebarkan kolom sesuai konten (mis. nama
-  // petugas panjang atau font rendering beda di tiap device), sementara
-  // offset `left` kolom berikutnya tetap statis -> menyebabkan tabrakan/
-  // tumpang tindih seperti yang terjadi di layar desktop kecil.
-  const COL_NO_WIDTH = 'w-9 min-w-9 max-w-9'
-  const COL_NAMA_WIDTH = 'w-[136px] min-w-[136px] max-w-[136px]'
-  const COL_NAMA_LEFT = 'left-9' // harus sama persis dengan lebar kolom No
-
-  // Header tabel pakai warna biru solid INDEPENDEN dari token --primary
-  // project (lihat laporan-harian-theme.css), karena --primary project bisa
-  // saja gelap/hitam sesuai tema yang dipilih, sementara tabel ini memang
-  // didesain biru terlepas dari tema apa pun yang dipakai.
-  const HEADER_BG = 'bg-[hsl(var(--laporan-header))]'
-  const HEADER_TEXT = 'text-[hsl(var(--laporan-header-foreground))]'
-
-  // Kolom sticky (No, Nama Cater) pakai box-shadow sebagai pemisah visual,
-  // BUKAN border-right biasa. Border tipis di tepi elemen sticky rawan
-  // "putus" sesaat saat browser melakukan sub-pixel repaint ketika tabel
-  // discroll horizontal (karena posisi sticky dihitung ulang tiap frame),
-  // sehingga warna background di belakangnya sempat keceplosan kelihatan.
-  // box-shadow tidak punya masalah ini karena digambar sebagai layer terpisah
-  // yang tidak ikut ke-recalculate posisinya.
-  const STICKY_DIVIDER = 'shadow-[2px_0_0_0_hsl(var(--border))]'
+  const cards = [
+    {
+      label: 'Total Tercatat',
+      value: formatAngka(kpi.totalCatat),
+      sub: `dari ${formatAngka(kpi.totalTarget)} target`,
+      color: 'text-foreground',
+    },
+    {
+      label: 'Pencapaian',
+      value: `${kpi.persenCapai.toFixed(1)}%`,
+      sub: kpi.isPeriodeBerjalan
+        ? `rata-rata ${Math.round(kpi.rataRataHarian)}/hari kerja`
+        : 'periode selesai',
+      color:
+        kpi.persenCapai >= 95
+          ? 'text-emerald-600 dark:text-emerald-400'
+          : kpi.persenCapai >= 80
+            ? 'text-amber-600 dark:text-amber-400'
+            : 'text-destructive',
+    },
+    {
+      label: 'Sisa Hari Kerja',
+      value: kpi.isPeriodeBerjalan ? `${kpi.hariKerjaSisa} hari` : '—',
+      sub: kpi.isPeriodeBerjalan
+        ? `dari ${kpi.totalHariKerja} hari kerja bulan ini`
+        : `total ${kpi.totalHariKerja} hari kerja`,
+      color: 'text-foreground',
+    },
+    {
+      label: kpi.isPeriodeBerjalan ? 'Proyeksi Akhir Bulan' : 'Realisasi Akhir',
+      value: kpi.isPeriodeBerjalan
+        ? formatAngka(kpi.proyeksiAkhirBulan)
+        : formatAngka(kpi.totalCatat),
+      sub: kpi.isPeriodeBerjalan
+        ? kpi.isOnTrack
+          ? '✓ Diperkirakan selesai tepat waktu'
+          : `⚠ Kurang ~${formatAngka(kpi.totalTarget - kpi.proyeksiAkhirBulan)} dari target`
+        : kpi.totalCatat >= kpi.totalTarget
+          ? '✓ Target tercapai'
+          : `✗ Kurang ${formatAngka(kpi.totalTarget - kpi.totalCatat)} dari target`,
+      color: kpi.isPeriodeBerjalan
+        ? kpi.isOnTrack
+          ? 'text-emerald-600 dark:text-emerald-400'
+          : 'text-destructive'
+        : kpi.totalCatat >= kpi.totalTarget
+          ? 'text-emerald-600 dark:text-emerald-400'
+          : 'text-destructive',
+    },
+  ]
 
   return (
-    <div className="overflow-hidden rounded-none border border-border">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {cards.map((card) => (
+        <div
+          key={card.label}
+          className="flex flex-col gap-1 rounded-lg border border-border bg-card p-3"
+        >
+          <span className="text-xs text-muted-foreground">{card.label}</span>
+          <span className={cn('text-xl font-bold tabular-nums', card.color)}>
+            {card.value}
+          </span>
+          <span className="text-[11px] leading-tight text-muted-foreground">
+            {card.sub}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── Matrix table itself ──────────────────────────────────────────────────────
+
+function MatrixTable({ data, periode }: { data: MatrixData; periode: number }) {
+  const COL_NO_WIDTH = 'w-9 min-w-9 max-w-9'
+  const COL_NAMA_WIDTH = 'w-[136px] min-w-[136px] max-w-[136px]'
+  const COL_NAMA_LEFT = 'left-9'
+  const HEADER_BG = 'bg-[hsl(var(--laporan-header))]'
+  const HEADER_TEXT = 'text-[hsl(var(--laporan-header-foreground))]'
+  const STICKY_DIVIDER = 'shadow-[2px_0_0_0_hsl(var(--border))]'
+
+  const kpi = hitungKpi(data, periode)
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-border">
       <div className="overflow-x-auto">
         <Table className="w-full border-collapse text-xs">
           <TableHeader>
-            {/* Baris judul kolom Tanggal */}
             <TableRow className="hover:bg-transparent">
               <TableHead
                 rowSpan={2}
@@ -239,7 +406,7 @@ function MatrixTable({ data, periode }: { data: MatrixData; periode: number }) {
               <TableHead
                 rowSpan={2}
                 className={cn(
-                  'h-auto min-w-[80px] border-b border-r border-border px-2 py-2 text-center font-semibold',
+                  'h-auto min-w-20 border-b border-r border-border px-2 py-2 text-center font-semibold',
                   HEADER_BG,
                   HEADER_TEXT,
                   'opacity-90',
@@ -250,7 +417,7 @@ function MatrixTable({ data, periode }: { data: MatrixData; periode: number }) {
               <TableHead
                 rowSpan={2}
                 className={cn(
-                  'h-auto min-w-[70px] border-b border-r border-border px-2 py-2 text-center font-semibold',
+                  'h-auto min-w-17.5 border-b border-r border-border px-2 py-2 text-center font-semibold',
                   HEADER_BG,
                   HEADER_TEXT,
                   'opacity-90',
@@ -261,13 +428,13 @@ function MatrixTable({ data, periode }: { data: MatrixData; periode: number }) {
               <TableHead
                 rowSpan={2}
                 className={cn(
-                  'h-auto min-w-[70px] border-b border-border px-2 py-2 text-center font-semibold',
+                  'h-auto min-w-30 border-b border-border px-2 py-2 text-center font-semibold',
                   HEADER_BG,
                   HEADER_TEXT,
                   'opacity-90',
                 )}
               >
-                Selisih
+                Progres
               </TableHead>
             </TableRow>
             <TableRow className="hover:bg-transparent">
@@ -285,7 +452,7 @@ function MatrixTable({ data, periode }: { data: MatrixData; periode: number }) {
                     key={h.tanggal}
                     title={label}
                     className={cn(
-                      'h-auto min-w-[34px] border-b border-r border-border px-1 py-1.5 text-center font-semibold',
+                      'h-auto min-w-8.5 border-b border-r border-border px-1 py-1.5 text-center font-semibold',
                       style.headerClassName,
                       style.headerTextClassName,
                     )}
@@ -298,63 +465,63 @@ function MatrixTable({ data, periode }: { data: MatrixData; periode: number }) {
           </TableHeader>
 
           <TableBody>
-            {data.items.map((row, idx) => (
-              <TableRow key={row.pencatatId} className="group">
-                <TableCell
-                  className={cn(
-                    'sticky left-0 z-10 truncate border-b border-border bg-card px-2 py-1.5 text-center tabular-nums group-hover:bg-muted/40',
-                    STICKY_DIVIDER,
-                    COL_NO_WIDTH,
-                  )}
-                >
-                  {idx + 1}
-                </TableCell>
-                <TableCell
-                  className={cn(
-                    'sticky z-10 truncate border-b border-border bg-card px-3 py-1.5 font-medium uppercase group-hover:bg-muted/40',
-                    STICKY_DIVIDER,
-                    COL_NAMA_WIDTH,
-                    COL_NAMA_LEFT,
-                  )}
-                  title={row.namaPetugas}
-                >
-                  {row.namaPetugas}
-                </TableCell>
-                {row.harian.map((value, i) => {
-                  const hari = data.hariInfo[i]
-                  const isKosongDiHariKerja = value === 0 && hari?.isHariKerja
-                  return (
-                    <TableCell
-                      key={i}
-                      className={cn(
-                        'border-b border-r border-border px-1 py-1.5 text-center tabular-nums',
-                        isKosongDiHariKerja
-                          ? 'bg-destructive/10 text-muted-foreground'
-                          : 'text-foreground',
-                      )}
-                    >
-                      {value}
-                    </TableCell>
-                  )
-                })}
-                <TableCell className="border-b border-r border-border px-2 py-1.5 text-center font-semibold tabular-nums">
-                  {formatAngka(row.totalCatat)}
-                </TableCell>
-                <TableCell className="border-b border-r border-border px-2 py-1.5 text-center tabular-nums text-muted-foreground">
-                  {formatAngka(row.target)}
-                </TableCell>
-                <TableCell
-                  className={cn(
-                    'border-b border-border px-2 py-1.5 text-center font-semibold tabular-nums',
-                    row.selisih > 0
-                      ? 'text-destructive'
-                      : 'text-emerald-600 dark:text-emerald-400',
-                  )}
-                >
-                  {formatAngka(row.selisih)}
-                </TableCell>
-              </TableRow>
-            ))}
+            {data.items.map((row, idx) => {
+              const pace = hitungPacePertugas(row, kpi)
+              return (
+                <TableRow key={row.pencatatId} className="group">
+                  <TableCell
+                    className={cn(
+                      'sticky left-0 z-10 truncate border-b border-border bg-card px-2 py-1.5 text-center tabular-nums group-hover:bg-muted/40',
+                      STICKY_DIVIDER,
+                      COL_NO_WIDTH,
+                    )}
+                  >
+                    {idx + 1}
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      'sticky z-10 truncate border-b border-border bg-card px-3 py-1.5 font-medium uppercase group-hover:bg-muted/40',
+                      STICKY_DIVIDER,
+                      COL_NAMA_WIDTH,
+                      COL_NAMA_LEFT,
+                    )}
+                    title={row.namaPetugas}
+                  >
+                    {row.namaPetugas}
+                  </TableCell>
+                  {row.harian.map((value, i) => {
+                    const hari = data.hariInfo[i]
+                    const isKosongDiHariKerja = value === 0 && hari?.isHariKerja
+                    return (
+                      <TableCell
+                        key={i}
+                        className={cn(
+                          'border-b border-r border-border px-1 py-1.5 text-center tabular-nums',
+                          isKosongDiHariKerja
+                            ? 'bg-destructive/10 text-muted-foreground'
+                            : 'text-foreground',
+                        )}
+                      >
+                        {value}
+                      </TableCell>
+                    )
+                  })}
+                  <TableCell className="border-b border-r border-border px-2 py-1.5 text-center font-semibold tabular-nums">
+                    {formatAngka(row.totalCatat)}
+                  </TableCell>
+                  <TableCell className="border-b border-r border-border px-2 py-1.5 text-center tabular-nums text-muted-foreground">
+                    {formatAngka(row.target)}
+                  </TableCell>
+
+                  <TableCell className="border-b border-border px-2 py-1.5">
+                    <PaceCell
+                      pace={pace}
+                      isPeriodeBerjalan={kpi.isPeriodeBerjalan}
+                    />
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
 
           <TableFooter>
@@ -391,19 +558,96 @@ function MatrixTable({ data, periode }: { data: MatrixData; periode: number }) {
               <TableCell className="border-r border-border px-2 py-1.5 text-center tabular-nums">
                 {formatAngka(data.total.target)}
               </TableCell>
-              <TableCell
-                className={cn(
-                  'px-2 py-1.5 text-center tabular-nums',
-                  data.total.selisih > 0
-                    ? 'text-destructive'
-                    : 'text-emerald-600 dark:text-emerald-400',
-                )}
-              >
-                {formatAngka(data.total.selisih)}
+              <TableCell className="border-border px-2 py-1.5">
+                <PaceCell
+                  pace={hitungPacePertugas(
+                    {
+                      pencatatId: '_total',
+                      namaPetugas: 'Total',
+                      harian: data.total.harian,
+                      totalCatat: data.total.totalCatat,
+                      target: data.total.target,
+                      selisih: data.total.selisih,
+                    },
+                    kpi,
+                  )}
+                  isPeriodeBerjalan={kpi.isPeriodeBerjalan}
+                />
               </TableCell>
             </TableRow>
           </TableFooter>
         </Table>
+      </div>
+    </div>
+  )
+}
+
+// ── Pace Cell ─────────────────────────────────────────────────────────────────
+
+const PACE_CONFIG: Record<
+  PaceStatus,
+  { label: string; barColor: string; badgeClass: string }
+> = {
+  'on-track': {
+    label: 'On Track',
+    barColor: 'bg-emerald-500',
+    badgeClass:
+      'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
+  },
+  'at-risk': {
+    label: 'At Risk',
+    barColor: 'bg-amber-500',
+    badgeClass:
+      'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
+  },
+  behind: {
+    label: 'Behind',
+    barColor: 'bg-destructive',
+    badgeClass: 'bg-destructive/10 text-destructive',
+  },
+  selesai: {
+    label: 'Selesai',
+    barColor: 'bg-emerald-500',
+    badgeClass:
+      'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
+  },
+}
+
+function PaceCell({
+  pace,
+  isPeriodeBerjalan,
+}: {
+  pace: ReturnType<typeof hitungPacePertugas>
+  isPeriodeBerjalan: boolean
+}) {
+  const cfg = PACE_CONFIG[pace.status]
+
+  const tooltipText = isPeriodeBerjalan
+    ? `Proyeksi akhir bulan: ${formatAngka(pace.proyeksi)} | Rata-rata: ${Math.round(pace.rataRata)}/hari kerja`
+    : undefined
+
+  return (
+    <div className="flex min-w-27.5 flex-col gap-1" title={tooltipText}>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn('h-full rounded-full transition-all', cfg.barColor)}
+          style={{ width: `${pace.persen}%` }}
+        />
+      </div>
+      <div className="flex items-center justify-between gap-1">
+        <span className="tabular-nums text-muted-foreground">
+          {pace.persen.toFixed(0)}%
+        </span>
+        {isPeriodeBerjalan && (
+          <span
+            className={cn(
+              'rounded px-1 py-0.5 text-[10px] font-semibold leading-none',
+              cfg.badgeClass,
+            )}
+          >
+            {cfg.label}
+          </span>
+        )}
       </div>
     </div>
   )

@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { useNavbar } from '@/components/layout/navbar'
 import { PageContainer } from '@/components/layout/page/page-container'
 import { PageHeader } from '@/components/layout/page/page-header'
+import { LaporanHarianAreaChart } from '@/components/features/laporan-harian/laporan-harian-area-chart'
 import { LaporanHarianMatrixTable } from '@/components/features/laporan-harian/laporan-harian-table'
 
 // ── Route ─────────────────────────────────────────────────────────────────────
@@ -30,7 +31,10 @@ function LaporanHarianPage() {
         />
       }
     >
-      <LaporanHarianMatrixTable />
+      <div className="flex flex-col gap-4">
+        <LaporanHarianAreaChart />
+        <LaporanHarianMatrixTable />
+      </div>
     </PageContainer>
   )
 }

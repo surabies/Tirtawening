@@ -265,16 +265,16 @@ export const navPelayanan: NavGroup[] = [
         items: [
           {
             title: 'Proses Closing',
-            url: '#', // TODO: create route /_dashboard/closing
+            url: '/closing/',
             shortcut: ['c', 'b'],
           },
           {
             title: 'Import ProgresCater',
-            url: '#', // TODO: create route /_dashboard/closing/import
+            url: '/closing/import/',
           },
           {
             title: 'Histori Closing',
-            url: '#', // TODO: create route /_dashboard/closing/history
+            url: '/closing/history/',
           },
         ],
       },

@@ -33,4 +33,5 @@ export const SIDEBAR_SHORTCUT_CLASS =
  * Styling untuk nested items container
  * PENTING: gunakan <ul> untuk menghindari nested <li> langsung di <li> induk
  */
-export const SIDEBAR_NESTED_LIST_CLASS = 'flex flex-col gap-0.5'
+export const SIDEBAR_NESTED_LIST_CLASS =
+  'mx-3.5 mt-0.5 flex flex-col gap-0.5 border-l border-sidebar-border/60 pl-3'

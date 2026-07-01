@@ -10,7 +10,6 @@ import { KELURAHAN_PALETTE, KECAMATAN_LINE_COLOR } from '../types/wilayah.color'
 import { useMapLayer } from './Maplayercontext'
 import type { MapLayerState } from './Maplayercontext'
 import logo from '@/assets/images/logo.png'
-import Image from 'next/image'
 
 // ── Toggle visual sederhana — tidak bergantung pada Radix data-state ────────
 // Switch bawaan Shadcn di project ini memakai data-checked/data-unchecked

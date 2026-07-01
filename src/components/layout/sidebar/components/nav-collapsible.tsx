@@ -6,8 +6,11 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible'
-import { SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar'
+} from '@/components/animate-ui/primitives/radix/collapsible'
+import {
+  SidebarMenuItem,
+  SidebarMenuButton,
+} from '@/components/animate-ui/components/radix/sidebar'
 import { cn } from '@/lib/utils'
 import { NavIcon } from './nav-icon'
 import { NavLeaf } from './nav-leaf'
