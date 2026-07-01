@@ -112,6 +112,12 @@ export const navPelayanan: NavGroup[] = [
         icon: 'peta',
         access: pelayananAccess(INTERNAL_ROLES),
       },
+      {
+        title: 'KPI Pencatat Meter',
+        url: '/kpi-pencatat/',
+        icon: 'chart-bar',
+        access: pelayananAccess(INTERNAL_ROLES),
+      },
     ],
   },
 

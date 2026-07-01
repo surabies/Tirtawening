@@ -181,19 +181,51 @@ export function PencatatKpiCard({ data }: { data: KpiData }) {
   return (
     <Card className="relative overflow-hidden border-border bg-card/50 shadow-2xl backdrop-blur-md">
       {/* Animated border laser */}
+      {/*
+        Catatan robustness:
+        - @keyframes didefinisikan inline di sini (bukan di globals.css) supaya
+          animasi ini TIDAK bergantung pada file CSS eksternal yang bisa lupa
+          di-import / ke-purge oleh Tailwind. Sebelumnya animation-name
+          "borderFlowSingle" dipanggil tapi keyframes-nya tidak ada di mana pun
+          → browser diam-diam mengabaikannya tanpa error.
+        - pathLength="100" pada <rect> menormalkan total keliling path jadi
+          selalu 100 unit, apa pun ukuran actual card-nya. Dulu dasharray
+          "100, 1300" mengasumsikan keliling ±1300px secara hardcode — kalau
+          card lebih kecil/besar (responsive), rasio segmen jadi salah dan
+          animasi terlihat diam atau meloncat.
+        - Animasi jalan lewat stroke-dashoffset (bukan cuma dasharray statis),
+          ini pola yang lebih reliable lintas browser untuk "marching ants".
+        - prefers-reduced-motion dihormati.
+      */}
+      <style>{`
+        @keyframes kpiCardBorderFlow {
+          from { stroke-dashoffset: 0; }
+          to { stroke-dashoffset: -100; }
+        }
+        .kpi-card-laser-rect {
+          stroke-dasharray: 8 92;
+          animation: kpiCardBorderFlow 4s linear infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .kpi-card-laser-rect {
+            animation: none;
+          }
+        }
+      `}</style>
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full rounded-2xl"
         xmlns="http://www.w3.org/2000/svg"
       >
         <rect
+          x="1"
+          y="1"
+          width="calc(100% - 2px)"
+          height="calc(100% - 2px)"
           rx="16"
           ry="16"
-          className="h-full w-full fill-none stroke-[2px]"
-          style={{
-            stroke: 'url(#laserGrad)',
-            strokeDasharray: '100, 1300',
-            animation: 'borderFlowSingle 4s linear infinite',
-          }}
+          pathLength={100}
+          className="kpi-card-laser-rect h-full w-full fill-none stroke-[2px]"
+          style={{ stroke: 'url(#laserGrad)' }}
         />
         <defs>
           <linearGradient id="laserGrad" x1="0%" y1="0%" x2="100%" y2="100%">

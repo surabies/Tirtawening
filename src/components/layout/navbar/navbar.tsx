@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils'
 import { useNavbar } from './navbar-context'
 import { layout } from '@/lib/layout'
 import { ChevronRight, Home } from 'lucide-react'
+import { ThemeToggleIcon } from '@/components/ThemeToggle.tsx'
+import { UserMenu } from './user-menu'
 
 // ── Breadcrumb helper ─────────────────────────────────────────────────────────
 // Mengubah path "/dashboard/pencatatan-meter/laporan-mandiri"
@@ -50,11 +52,16 @@ export function Navbar() {
   const crumbs = buildBreadcrumbs(pathname)
 
   useEffect(() => {
-    const el = document.querySelector('main')
-    if (!el) return
-    const onScroll = () => setScrolled(el.scrollTop > 10)
-    el.addEventListener('scroll', onScroll)
-    return () => el.removeEventListener('scroll', onScroll)
+    const onScroll = () => {
+      // Shadcn UI default-nya men-scroll window halaman
+      setScrolled(window.scrollY > 10)
+    }
+  
+    // Daftarkan event listener ke window global
+    window.addEventListener('scroll', onScroll)
+    
+    // Clean up event listener saat komponen unmount
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   return (
@@ -117,6 +124,13 @@ export function Navbar() {
             {content}
           </div>
         )}
+
+        {/* ── Theme toggle + avatar user, selalu di ujung kanan ── */}
+        <div className="ml-1 flex shrink-0 items-center gap-1.5">
+          <div className="bg-border mr-1 hidden h-5 w-px sm:block" />
+          <ThemeToggleIcon />
+          <UserMenu />
+        </div>
       </div>
     </header>
   )
