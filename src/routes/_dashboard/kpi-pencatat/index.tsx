@@ -1,9 +1,23 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { PageContainer } from '@/components/layout/page/page-container'
+import { PageHeader } from '@/components/layout/page/page-header'
+import { PencatatKpiGrid } from '@/components/features/kpi-pencatat/pencatat-kpi.grid.tsx'
 
 export const Route = createFileRoute('/_dashboard/kpi-pencatat/')({
-  component: RouteComponent,
+  component: PencatatKpiPage,
 })
 
-function RouteComponent() {
-  return <div>Hello "/_dashboard/kpi-pencatat/"!</div>
+function PencatatKpiPage() {
+  return (
+    <PageContainer
+      header={
+        <PageHeader
+          title="KPI Pencatat Meter"
+          description="Progres target, akurasi, dan temuan anomali per pencatat periode aktif."
+        />
+      }
+    >
+      <PencatatKpiGrid />
+    </PageContainer>
+  )
 }

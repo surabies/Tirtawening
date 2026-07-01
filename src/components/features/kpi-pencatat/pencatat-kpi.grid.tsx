@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/integrations/trpc/react'
-import { PencatatKpiCard } from './pencatat-kpi-card'
+import { PencatatKpiCard } from './pencatat-kpi-card.tsx'
 import { Skeleton } from '@/components/ui/skeleton'
 
 const PERIODE = new Date().getFullYear() * 100 + (new Date().getMonth() + 1)

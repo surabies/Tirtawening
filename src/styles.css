@@ -40,6 +40,12 @@
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.871 0.006 286.286);
+  --success: oklch(0.72 0.19 149);       /* emerald-ish */
+  --success-foreground: oklch(0.98 0 0);
+  --warning: oklch(0.77 0.16 70);        /* amber-ish */
+  --warning-foreground: oklch(0.98 0 0);
+  --info: oklch(0.62 0.19 259);          /* blue-ish */
+  --info-foreground: oklch(0.98 0 0);
 
   /* Warna header tabel laporan harian - SENGAJA biru solid independen dari
      --primary project, supaya tampilan tabel ini konsisten walau tema
@@ -123,6 +129,9 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.274 0.006 286.033);
   --sidebar-ring: oklch(0.442 0.017 285.786);
+  --success: oklch(0.7 0.17 149);
+  --warning: oklch(0.75 0.15 70);
+  --info: oklch(0.6 0.2 259);
 
   /* Di dark mode, sedikit redam supaya tidak menyilaukan tapi tetap kontras */
   --laporan-header: 221 70% 45%;
@@ -228,6 +237,12 @@
   --color-legend-muted: var(----legend-muted);
   --color-legend-foreground: var(----legend-foreground);
   --color-legend: var(----legend);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
 }
 
 /* ── Layout height chain (TanStack Start SSR) ── */

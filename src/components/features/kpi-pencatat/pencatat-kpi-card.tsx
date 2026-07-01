@@ -60,60 +60,75 @@ const KONDISI_LABEL: Record<string, string> = {
 }
 
 // ---------------------------------------------------------------------------
+// Status tone mapping (pakai CSS var semantik, bukan warna Tailwind literal)
+// Definisikan var ini di globals.css, contoh ada di bawah file ini.
+// ---------------------------------------------------------------------------
+
+type Tone = 'critical' | 'warning' | 'info' | 'success'
+
+const TONE_CLASS: Record<
+  Tone,
+  { dot: string; text: string; card: string; value: string }
+> = {
+  critical: {
+    dot: 'bg-destructive',
+    text: 'text-destructive',
+    card: 'border-destructive/15 bg-destructive/5',
+    value: 'text-destructive',
+  },
+  warning: {
+    dot: 'bg-warning',
+    text: 'text-warning',
+    card: 'border-warning/15 bg-warning/5',
+    value: 'text-warning',
+  },
+  info: {
+    dot: 'bg-info',
+    text: 'text-info',
+    card: 'border-info/15 bg-info/5',
+    value: 'text-info',
+  },
+  success: {
+    dot: 'bg-success',
+    text: 'text-success',
+    card: 'border-success/15 bg-success/5',
+    value: 'text-success',
+  },
+}
+
+// ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 
 function AnomalyGroup({
   label,
   items,
-  color,
+  tone,
 }: {
   label: string
   items: KondisiItem[]
-  color: 'rose' | 'amber' | 'blue'
+  tone: Tone
 }) {
   if (!items.length) return null
 
-  const dotColor = {
-    rose: 'bg-rose-400',
-    amber: 'bg-amber-400',
-    blue: 'bg-blue-400',
-  }[color]
-
-  const textColor = {
-    rose: 'text-rose-400',
-    amber: 'text-amber-400',
-    blue: 'text-blue-400',
-  }[color]
-
-  const cardStyle = {
-    rose: 'border-rose-500/15 bg-rose-500/5',
-    amber: 'border-amber-500/15 bg-amber-500/5',
-    blue: 'border-blue-500/15 bg-blue-500/5',
-  }[color]
-
-  const valueColor = {
-    rose: 'text-rose-400',
-    amber: 'text-amber-400',
-    blue: 'text-blue-400',
-  }[color]
+  const cls = TONE_CLASS[tone]
 
   return (
     <div className="space-y-1.5">
-      <div className={`flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase ${textColor}`}>
-        <span className={`h-1 w-1 rounded-full ${dotColor}`} />
+      <div className={`flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase ${cls.text}`}>
+        <span className={`h-1 w-1 rounded-full ${cls.dot}`} />
         {label}
       </div>
       <div className="grid grid-cols-2 gap-1.5 text-[11px]">
         {items.map(({ kondisi, jumlah }) => (
           <div
             key={kondisi}
-            className={`flex items-center justify-between rounded-lg border px-2.5 py-1.5 ${cardStyle}`}
+            className={`flex items-center justify-between rounded-lg border px-2.5 py-1.5 ${cls.card}`}
           >
-            <span className="text-slate-300 truncate">
+            <span className="text-muted-foreground truncate">
               {KONDISI_LABEL[kondisi] ?? kondisi}
             </span>
-            <span className={`ml-2 shrink-0 font-mono font-bold ${valueColor}`}>
+            <span className={`ml-2 shrink-0 font-mono font-bold ${cls.value}`}>
               {jumlah}
             </span>
           </div>
@@ -143,20 +158,17 @@ export function PencatatKpiCard({ data }: { data: KpiData }) {
   const nip = pencatat.nip ?? '-'
   const avatar = pencatat.user?.image
 
-  // Warna akurasi
-  const akurasiColor =
-    akurasi >= 90
-      ? 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10'
-      : akurasi >= 75
-        ? 'text-amber-400 border-amber-500/20 bg-amber-500/10'
-        : 'text-rose-400 border-rose-500/20 bg-rose-500/10'
+  // Tone akurasi berdasarkan ambang, mapped ke token semantik
+  const akurasiTone: Tone =
+    akurasi >= 90 ? 'success' : akurasi >= 75 ? 'warning' : 'critical'
+  const akurasiCls = TONE_CLASS[akurasiTone]
 
   const progresBarColor =
     progres >= 90
-      ? 'from-emerald-500 to-teal-500'
+      ? 'from-success to-success/70'
       : progres >= 70
-        ? 'from-blue-500 to-indigo-500'
-        : 'from-amber-500 to-orange-500'
+        ? 'from-primary to-primary/70'
+        : 'from-warning to-warning/70'
 
   const pctNormal =
     totalSl > 0 ? Math.round((normalSl / totalSl) * 1000) / 10 : 0
@@ -167,7 +179,7 @@ export function PencatatKpiCard({ data }: { data: KpiData }) {
     breakdown.kritis.length + breakdown.peringatan.length + breakdown.lapangan.length > 0
 
   return (
-    <Card className="relative overflow-hidden border-slate-800/60 bg-slate-900/50 shadow-2xl backdrop-blur-md">
+    <Card className="relative overflow-hidden border-border bg-card/50 shadow-2xl backdrop-blur-md">
       {/* Animated border laser */}
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full rounded-2xl"
@@ -185,18 +197,18 @@ export function PencatatKpiCard({ data }: { data: KpiData }) {
         />
         <defs>
           <linearGradient id="laserGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#3b82f6" />
-            <stop offset="100%" stopColor="#10b981" />
+            <stop offset="0%" stopColor="var(--primary)" />
+            <stop offset="100%" stopColor="var(--success)" />
           </linearGradient>
         </defs>
       </svg>
 
-      <CardContent className="p-5 text-slate-100">
+      <CardContent className="p-5 text-card-foreground">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="relative rounded-full bg-gradient-to-tr from-amber-500 via-blue-500 to-emerald-500 p-[2px] shrink-0">
-              <div className="h-14 w-14 rounded-full bg-slate-900 p-[2px]">
+            <div className="relative rounded-full bg-gradient-to-tr from-warning via-primary to-success p-[2px] shrink-0">
+              <div className="h-14 w-14 rounded-full bg-card p-[2px]">
                 {avatar ? (
                   <img
                     src={avatar}
@@ -204,23 +216,23 @@ export function PencatatKpiCard({ data }: { data: KpiData }) {
                     className="h-full w-full rounded-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center rounded-full bg-slate-800">
-                    <User className="h-6 w-6 text-slate-500" />
+                  <div className="flex h-full w-full items-center justify-center rounded-full bg-muted">
+                    <User className="h-6 w-6 text-muted-foreground" />
                   </div>
                 )}
               </div>
               {pencatat.isAktif && (
-                <span className="absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-slate-900 bg-emerald-500" />
+                <span className="absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-card bg-success" />
               )}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm font-semibold tracking-tight">{nama}</h3>
-                <span className="inline-flex items-center rounded border border-blue-500/20 bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-400">
+                <span className="inline-flex items-center rounded border border-info/20 bg-info/10 px-1.5 py-0.5 text-[10px] font-medium text-info">
                   NIP: {nip}
                 </span>
               </div>
-              <p className="text-xs font-medium text-slate-400">
+              <p className="text-xs font-medium text-muted-foreground">
                 Pencatat Meter
               </p>
             </div>
@@ -228,47 +240,47 @@ export function PencatatKpiCard({ data }: { data: KpiData }) {
 
           {/* Akurasi badge */}
           <div className="flex flex-col items-end gap-0.5 shrink-0">
-            <div className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold ${akurasiColor}`}>
+            <div className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold ${akurasiCls.card} ${akurasiCls.text}`}>
               {akurasi}%
             </div>
-            <span className="text-[9px] font-bold tracking-widest text-slate-500 uppercase">
+            <span className="text-[9px] font-bold tracking-widest text-muted-foreground uppercase">
               Akurasi
             </span>
           </div>
         </div>
 
-        <hr className="my-4 border-slate-800/80" />
+        <hr className="my-4 border-border/80" />
 
         {/* Progres target */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs font-semibold tracking-wide text-slate-400 uppercase">
+          <div className="flex items-center justify-between text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 text-blue-500" />
+              <CheckCircle2 className="h-4 w-4 text-primary" />
               Progres Target
             </span>
-            <span className="font-mono text-slate-400">
-              <strong className="text-slate-100">
+            <span className="font-mono text-muted-foreground">
+              <strong className="text-foreground">
                 {totalSl.toLocaleString('id-ID')}
               </strong>{' '}
               / {targetSl.toLocaleString('id-ID')} SL
             </span>
           </div>
-          <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+          <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div
               className={`h-full rounded-full bg-gradient-to-r ${progresBarColor} transition-all duration-700`}
               style={{ width: `${Math.min(progres, 100)}%` }}
             />
           </div>
-          <div className="flex justify-between text-[11px] font-medium text-slate-400">
+          <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
             <span>
               Normal:{' '}
-              <strong className="text-emerald-400">
+              <strong className="text-success">
                 {normalSl.toLocaleString('id-ID')} ({pctNormal}%)
               </strong>
             </span>
             <span>
               Anomali:{' '}
-              <strong className="text-amber-400">
+              <strong className="text-warning">
                 {anomaliSl.toLocaleString('id-ID')} ({pctAnomali}%)
               </strong>
             </span>
@@ -278,14 +290,14 @@ export function PencatatKpiCard({ data }: { data: KpiData }) {
         {/* Breakdown anomali */}
         {hasAnomali && (
           <>
-            <hr className="my-4 border-slate-800/80" />
+            <hr className="my-4 border-border/80" />
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-xs font-semibold tracking-wide text-slate-400 uppercase">
+              <div className="flex items-center justify-between text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 <span className="flex items-center gap-1.5">
-                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  <AlertTriangle className="h-4 w-4 text-warning" />
                   Rincian Temuan
                 </span>
-                <span className="rounded border border-slate-700/60 bg-slate-800 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-300">
+                <span className="rounded border border-border bg-muted px-2 py-0.5 font-mono text-[11px] font-bold text-muted-foreground">
                   {anomaliSl} Total
                 </span>
               </div>
@@ -293,30 +305,30 @@ export function PencatatKpiCard({ data }: { data: KpiData }) {
               <AnomalyGroup
                 label="Kritis / Butuh Tindakan"
                 items={breakdown.kritis}
-                color="rose"
+                tone="critical"
               />
               <AnomalyGroup
                 label="Peringatan Teknis"
                 items={breakdown.peringatan}
-                color="amber"
+                tone="warning"
               />
               <AnomalyGroup
                 label="Situasi Lapangan"
                 items={breakdown.lapangan}
-                color="blue"
+                tone="info"
               />
             </div>
           </>
         )}
 
         {/* Footer */}
-        <div className="mt-4 flex items-center justify-between border-t border-slate-800/60 pt-3 text-[10px] font-medium text-slate-500">
+        <div className="mt-4 flex items-center justify-between border-t border-border pt-3 text-[10px] font-medium text-muted-foreground">
           <span>
             Periode:{' '}
             {String(data.periode).slice(4)}/{String(data.periode).slice(0, 4)}
           </span>
           <span className="flex items-center gap-1">
-            <span className="h-1 w-1 rounded-full bg-emerald-500" />
+            <span className="h-1 w-1 rounded-full bg-success" />
             Realtime
           </span>
         </div>
