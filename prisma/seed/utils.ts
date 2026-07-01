@@ -55,32 +55,64 @@ function parseCsvLine(line: string, delimiter: string): string[] {
 }
 
 /**
- * Baca file CSV dengan separator `;` dan kembalikan array of objects.
+ * Deteksi delimiter CSV secara otomatis dari baris header.
+ * Strategi: hitung kemunculan `;` vs `,` di baris pertama —
+ * delimiter yang lebih sering muncul dianggap pemenang.
+ * Kalau sama atau tidak ada, fallback ke `;` (default Tirtawening).
+ */
+function detectDelimiter(headerLine: string): string {
+  const semicolons = (headerLine.match(/;/g) ?? []).length
+  const commas = (headerLine.match(/,/g) ?? []).length
+  if (commas > semicolons) return ','
+  return ';'
+}
+
+/**
+ * Baca file CSV dan kembalikan array of objects.
  * Otomatis strip whitespace dan tab dari setiap value.
  *
- * Quote-aware: field ber-quote yang mengandung `;` di dalamnya TIDAK akan
- * memecah kolom (lihat parseCsvLine di atas).
+ * @param filePath  Path ke file CSV
+ * @param delimiter Karakter pemisah kolom. Default: auto-detect dari header
+ *                  (hitung `;` vs `,`, ambil yang lebih banyak). Bisa
+ *                  di-override eksplisit jika auto-detect meleset, misal
+ *                  readCsv('./data.csv', ',') untuk CSV berkomma.
+ *
+ * Quote-aware: field ber-quote yang mengandung delimiter di dalamnya TIDAK
+ * akan memecah kolom (lihat parseCsvLine di atas).
  *
  * Validasi: setiap baris yang jumlah kolomnya tidak cocok dengan header
  * akan di-warn ke console (bukan langsung throw, supaya seed tetap bisa
  * jalan) sehingga anomali ketahuan saat seeding, bukan setelah hitung
  * jumlah data meleset.
  */
-export function readCsv(filePath: string): Record<string, string>[] {
+export function readCsv(
+  filePath: string,
+  delimiter?: string,
+): Record<string, string>[] {
   const abs = path.resolve(filePath)
   const raw = fs.readFileSync(abs, 'utf-8')
-  const lines = raw
+
+  // Strip BOM (UTF-8 BOM \uFEFF sering muncul di export Excel Windows —
+  // tanpa ini, kolom pertama header terbaca sebagai "\uFEFFNo Pel" bukan
+  // "No Pel", sehingga row["No Pel"] selalu undefined → semua baris di-skip)
+  const clean = raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw
+
+  const lines = clean
     .trim()
     .split('\n')
     .filter((l) => l.trim() !== '')
-  const headers = parseCsvLine(lines[0], ';').map((h) =>
+
+  // Auto-detect delimiter dari header jika tidak di-override
+  const sep = delimiter ?? detectDelimiter(lines[0])
+
+  const headers = parseCsvLine(lines[0], sep).map((h) =>
     h.trim().replace(/^"|"$/g, ''),
   )
 
   let mismatchCount = 0
 
   const rows = lines.slice(1).map((line: string, idx: number) => {
-    const vals = parseCsvLine(line, ';')
+    const vals = parseCsvLine(line, sep)
     if (vals.length !== headers.length) {
       mismatchCount++
       if (mismatchCount <= 10) {
@@ -102,7 +134,8 @@ export function readCsv(filePath: string): Record<string, string>[] {
   if (mismatchCount > 0) {
     console.warn(
       `  [readCsv] Total ${mismatchCount} baris dengan jumlah kolom tidak cocok ` +
-        `(dari ${lines.length - 1} baris). Periksa data ini secara manual.`,
+        `(dari ${lines.length - 1} baris). Delimiter yang terdeteksi: '${sep}'. ` +
+        `Jika salah, override dengan readCsv(path, ',') atau readCsv(path, ';').`,
     )
   }
 
@@ -111,27 +144,115 @@ export function readCsv(filePath: string): Record<string, string>[] {
 
 // ─── DATE PARSERS ─────────────────────────────────────────────────────────────
 
-/**
- * Parse berbagai format tanggal yang ada di CSV:
- *   - "2026-05-01 07:42:26"  (ProgresCater tglcatat)
- *   - "2018-09-14 00:00:00"  (tglpasangmeter)
- *   - "4/8/2026"             (r-nomor, format M/D/YYYY)
- *   - "5/6/2026"
- * Kembalikan Date atau null jika kosong/invalid.
- */
-export function parseDate(raw: string | undefined | null): Date | null {
-  if (!raw || raw.trim() === '' || raw.trim() === 'NaN') return null
-  const s = raw.trim()
+// ─── DATE PARSERS ─────────────────────────────────────────────────────────────
 
-  // Format M/D/YYYY dari r-nomor
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
-    const [m, d, y] = s.split('/').map(Number)
-    return new Date(y, m - 1, d)
+/**
+ * Satu-satunya fungsi date parser yang perlu kamu panggil dari luar.
+ * Menangani semua format tanggal yang pernah/mungkin muncul di CSV Tirtawening:
+ *
+ *   "2026-05-01"            → ISO date (ProgresCater, format paling aman)
+ *   "2026-05-01 07:42:26"   → ISO datetime
+ *   "01/07/2026"            → DD/MM/YYYY (lapdatameter tgl_catat/tgl_upload)
+ *   "4/8/2026"              → M/D/YYYY  (r-nomor) — tapi lihat catatan di bawah
+ *
+ * STRATEGI AUTO-DETECT DD/MM vs MM/DD:
+ * Kalau salah satu komponen lebih dari 12, itu PASTI bukan bulan →
+ * komponen itu adalah hari, dan urutan terbalik.
+ *   "25/07/2026" → 25 tidak bisa jadi bulan → pasti DD/MM/YYYY → 25 Juli
+ *   "07/25/2026" → 25 di posisi ke-2, tidak bisa jadi bulan → pasti MM/DD/YYYY → 25 Juli
+ *
+ * KASUS AMBIGU (kedua komponen ≤ 12, misal "01/07/2026"):
+ * Tidak bisa otomatis dibedakan secara matematis. Gunakan parameter `format`:
+ *   parseDateAuto("01/07/2026", "DMY") → 1 Juli (lapdatameter)
+ *   parseDateAuto("4/8/2026",   "MDY") → 8 April (r-nomor)
+ *   parseDateAuto("01/07/2026")        → default DMY (lebih umum di Indonesia)
+ *
+ * Kembalikan null jika kosong, "NaN", atau tanggal tidak valid.
+ */
+export function parseDateAuto(
+  raw: string | undefined | null,
+  format: 'DMY' | 'MDY' | 'auto' = 'DMY',
+): Date | null {
+  if (!raw) return null
+  const s = raw.trim()
+  if (s === '' || s === 'NaN' || s === '-' || s === '0') return null
+
+  // Format ISO: YYYY-MM-DD (dengan atau tanpa jam) → langsung parse, aman
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+    const d = new Date(s)
+    return isNaN(d.getTime()) ? null : d
   }
 
-  // Format YYYY-MM-DD (dengan atau tanpa jam)
+  // Format slash: D/M/YYYY, DD/MM/YYYY, M/D/YYYY, dll
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+    const parts = s.split('/').map(Number)
+    const [a, b, y] = parts
+
+    let day: number
+    let month: number
+
+    if (format === 'auto') {
+      // Kalau a > 12: a pasti hari (DD/MM/YYYY)
+      // Kalau b > 12: b pasti hari → berarti a adalah bulan (MM/DD/YYYY)
+      // Kalau keduanya ≤ 12: ambiguous → asumsi DMY (konvensi Indonesia)
+      if (a > 12) {
+        day = a
+        month = b
+      } else if (b > 12) {
+        day = b
+        month = a
+      } else {
+        // Ambiguous: default DMY
+        day = a
+        month = b
+      }
+    } else if (format === 'DMY') {
+      day = a
+      month = b
+    } else {
+      // MDY
+      month = a
+      day = b
+    }
+
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null
+    const result = new Date(y, month - 1, day)
+    // Validasi tambahan: new Date(2026, 1, 30) akan auto-overflow ke Maret —
+    // tangkap kasus ini dan kembalikan null
+    if (result.getMonth() !== month - 1) return null
+    return result
+  }
+
+  return null
+}
+
+/**
+ * @deprecated Gunakan parseDateAuto(raw, 'MDY') sebagai gantinya.
+ * Dipertahankan untuk backward compatibility dengan seed r-nomor yang sudah ada.
+ *
+ * Parse tanggal format M/D/YYYY (r-nomor) atau YYYY-MM-DD (ProgresCater).
+ */
+export function parseDate(raw: string | undefined | null): Date | null {
+  if (!raw) return null
+  const s = raw.trim()
+  if (s === '' || s === 'NaN') return null
+
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+    return parseDateAuto(s, 'MDY')
+  }
+
   const d = new Date(s)
   return isNaN(d.getTime()) ? null : d
+}
+
+/**
+ * @deprecated Gunakan parseDateAuto(raw, 'DMY') sebagai gantinya.
+ * Dipertahankan untuk backward compatibility dengan 03-lapdatameter.ts.
+ *
+ * Parse tanggal format DD/MM/YYYY (lapdatameter tgl_catat, tgl_upload).
+ */
+export function parseDateDMY(raw: string | undefined | null): Date | null {
+  return parseDateAuto(raw, 'DMY')
 }
 
 /**
@@ -173,11 +294,19 @@ export function thblToDate(thbl: number | string): Date {
 // ─── NORMALIZERS ─────────────────────────────────────────────────────────────
 
 /**
- * Normalisasi nomor langganan: zero-pad ke 11 digit.
- * "209301892" → "00209301892"
+ * Normalisasi nomor langganan: strip whitespace/tab, lalu zero-pad ke
+ * panjang yang diinginkan.
+ *
+ * @param raw    Value mentah dari CSV
+ * @param digits Panjang nomor yang diharapkan (default 11 — standar PDAM).
+ *               Jika sistem berganti format (misal 12 digit), cukup ubah
+ *               parameter ini tanpa mengubah tiap seed script.
+ *
+ * "209301892" → "00209301892" (digits=11, default)
+ * "209301892" → "000209301892" (digits=12)
  */
-export function normalizeNolg(raw: string | number): string {
-  return String(raw).trim().replace(/^\t/, '').padStart(11, '0')
+export function normalizeNolg(raw: string | number, digits = 11): string {
+  return String(raw).trim().replace(/^\t/, '').padStart(digits, '0')
 }
 
 /**

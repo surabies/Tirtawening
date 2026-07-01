@@ -11,7 +11,7 @@ export function PublicFooter() {
           {/* Brand */}
           <div>
             <p className="font-semibold tracking-tight">
-              PERUMDA Tirtawening Kota Bandung
+              Pencatat Meter Pelayanan wilayah 5
             </p>
             <p className="mt-2 max-w-xs text-sm text-muted-foreground">
               Siap melayani kebutuhan air bersih warga kota Bandung.
@@ -57,7 +57,7 @@ export function PublicFooter() {
               <li className="flex items-center gap-2.5">
                 <Phone className="h-4 w-4 shrink-0" />
                 <a href="tel:0224263129" className="hover:text-foreground">
-                  (022) 426 3129
+                  (+62) 81120008051
                 </a>
               </li>
               <li className="flex items-center gap-2.5">
@@ -66,7 +66,7 @@ export function PublicFooter() {
                   href="mailto:cs@tirtawening.co.id"
                   className="hover:text-foreground"
                 >
-                  cs@tirtawening.co.id
+                  cater@tirtawening.co.id
                 </a>
               </li>
             </ul>
@@ -75,7 +75,10 @@ export function PublicFooter() {
 
         {/* Bottom bar */}
         <div className="mt-8 flex flex-col gap-2 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>© {year} PERUMDA Tirtawening Kota Bandung. All rights reserved.</p>
+          <p>
+            © {year} Aplikasi masih dalam tahap pengembangan{' '}
+            <span className="text-blue-600">Wiska Prayoga</span>.
+          </p>
         </div>
       </div>
     </footer>

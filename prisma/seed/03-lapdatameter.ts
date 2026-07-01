@@ -17,6 +17,7 @@ import {
   mapKondisi,
   mapKategori,
   parseDate,
+  parseDateDMY,
 } from './utils'
 
 export async function seedLapdatameter(csvPath: string) {
@@ -39,14 +40,7 @@ export async function seedLapdatameter(csvPath: string) {
         continue
       }
 
-      // kd_petugas kadang "-" (kosong) padahal kolom "Nama Petugas" tetap
-      // terisi nama valid (terbukti 26 baris di data lapdatameter punya
-      // kd_petugas="-" tapi Nama Petugas="AGUS"/"DIDIN"/dst). Fallback ke
-      // "Nama Petugas" supaya baris ini tidak salah nyasar jadi "tidak
-      // diketahui" padahal sebenarnya petugasnya diketahui.
-      const pencatatNama =
-        normalizePencatat(row['kd_petugas']) ??
-        normalizePencatat(row['Nama Petugas'])
+      const pencatatNama = normalizePencatat(row['kd_petugas'])
       const pencatatId = pencatatNama
         ? (cachePencatat.get(pencatatNama) ?? null)
         : null
@@ -67,8 +61,8 @@ export async function seedLapdatameter(csvPath: string) {
           kategori: mapKategori(row['Zona Wil']),
           nomorMeter: row['kd_wm']?.trim() || null,
           pencatatId,
-          tanggalCatat: parseDate(row['tgl_catat']),
-          tanggalUpload: parseDate(row['tgl_upload']),
+          tanggalCatat: parseDateDMY(row['tgl_catat']),
+          tanggalUpload: parseDateDMY(row['tgl_upload']),
         },
         create: {
           nomorLangganan: nolg,
@@ -82,8 +76,8 @@ export async function seedLapdatameter(csvPath: string) {
           kategori: mapKategori(row['Zona Wil']),
           nomorMeter: row['kd_wm']?.trim() || null,
           pencatatId,
-          tanggalCatat: parseDate(row['tgl_catat']),
-          tanggalUpload: parseDate(row['tgl_upload']),
+          tanggalCatat: parseDateDMY(row['tgl_catat']),
+          tanggalUpload: parseDateDMY(row['tgl_upload']),
         },
       })
 
